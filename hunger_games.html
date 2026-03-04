@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hunger Games RPG Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f1f5f9;
+        }
+        
+        h1, h2, .font-cinzel {
+            font-family: 'Cinzel', serif;
+        }
+
+        .event-card {
+            border-left: 4px solid #ef4444;
+            background: rgba(30, 41, 59, 0.7);
+            animation: fadeIn 0.4s ease-out;
+            margin-bottom: 0.75rem;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .death { border-left-color: #7f1d1d; background: rgba(69, 10, 10, 0.6); font-weight: bold; }
+        .damage { border-left-color: #f97316; }
+        .action { border-left-color: #3b82f6; }
+        .safe { border-left-color: #22c55e; }
+        .team-attack { border-left-color: #a855f7; background: rgba(88, 28, 135, 0.4); }
+        .damage-team { border-left-color: #a855f7; background: rgba(88, 28, 135, 0.2); }
+        .cornucopia { border-left-color: #eab308; background: rgba(234, 179, 8, 0.15); }
+
+        .health-bar-bg { background: #334155; height: 8px; border-radius: 4px; overflow: hidden; }
+        .health-bar-fill { height: 100%; transition: width 0.5s ease-in-out; }
+
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        
+        .dead-badge {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            display: inline-block;
+            margin: 2px;
+        }
+
+        .vendetta-tag {
+            background: #f97316;
+            color: white;
+            font-size: 8px;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-weight: bold;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+
+        .district-eliminated {
+            text-decoration: line-through;
+            opacity: 0.4;
+            color: #ef4444 !important;
+        }
+
+        #event-log {
+            scroll-behavior: smooth;
+        }
+
+        .input-focus:focus {
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-amber-500 mb-2 tracking-widest">HUNGER GAMES RPG</h1>
+            <p class="text-slate-400 italic font-light">Crea i tuoi distretti e sfida il destino nell'Arena.</p>
+        </header>
+
+        <!-- Setup Screen -->
+        <div id="setup-screen" class="max-w-4xl mx-auto space-y-6">
+            <div class="bg-slate-800 p-8 md:p-12 rounded-2xl shadow-2xl border border-slate-700">
+                <h2 class="text-3xl font-semibold mb-2 text-amber-400 font-cinzel text-center">Configurazione Distretti</h2>
+                <p class="text-slate-400 text-center mb-8 text-sm italic">Crea un distretto personalizzato e aggiungi i partecipanti.</p>
+                
+                <!-- District Creator -->
+                <div class="bg-slate-900/50 p-6 rounded-xl border border-slate-700 mb-8">
+                    <div class="flex flex-col md:flex-row gap-3">
+                        <input type="text" id="district-input" placeholder="Esempio: Distretto del Pane, Mercenari..." 
+                               class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-amber-500 input-focus transition-all">
+                        <button onclick="createDistrict()" class="bg-amber-600 hover:bg-amber-500 text-white px-6 py-3 rounded-xl font-bold transition shadow-lg whitespace-nowrap">
+                            CREA DISTRETTO
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Main Player List Container -->
+                <div id="district-container" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 max-h-[500px] overflow-y-auto pr-2 scrollbar-hide">
+                    <!-- Dinamicamente popolato -->
+                </div>
+
+                <div class="flex flex-col md:flex-row justify-between items-center border-t border-slate-700 pt-8 gap-6">
+                    <div class="text-xl text-slate-400 font-cinzel">
+                        Tributi Totali: <strong id="player-count" class="text-amber-500 text-2xl">0</strong>
+                    </div>
+                    <button id="start-btn" onclick="startGame()" disabled
+                            class="w-full md:w-auto bg-green-600 hover:bg-green-500 disabled:opacity-30 text-white px-12 py-5 rounded-2xl font-bold text-2xl transition shadow-[0_0_20px_rgba(22,163,74,0.3)] uppercase tracking-wider">
+                        INIZIA I GIOCHI
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Screen (Simile a prima, rimosso duplicazioni CSS/Layout) -->
+        <div id="game-screen" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div class="lg:col-span-4 space-y-6">
+                <div>
+                    <h3 class="text-xl font-cinzel text-amber-400 border-b border-slate-700 pb-2 mb-4">Stato Tributi</h3>
+                    <div id="status-container" class="grid grid-cols-1 gap-3 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide"></div>
+                </div>
+
+                <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700">
+                    <h3 class="text-md font-cinzel text-slate-300 mb-3 uppercase tracking-tighter">Situazione Distretti</h3>
+                    <div id="district-status" class="grid grid-cols-2 gap-2 text-[11px]"></div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-8 flex flex-col space-y-6">
+                <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 h-[550px] flex flex-col shadow-2xl relative">
+                    <div class="flex justify-between items-center mb-4 border-b border-slate-700/50 pb-4">
+                        <div>
+                            <h2 id="current-phase" class="text-2xl font-bold text-amber-400">Preparazione</h2>
+                            <span id="alive-count" class="text-xs font-bold text-green-400 uppercase tracking-widest">VIVI: 0</span>
+                        </div>
+                        <button onclick="resetGame()" class="bg-slate-700 hover:bg-red-900/50 text-slate-300 px-4 py-2 rounded-lg text-xs font-bold border border-slate-600 transition-all">
+                            MENU
+                        </button>
+                    </div>
+                    
+                    <div id="event-log" class="flex-1 overflow-y-auto pr-2 scrollbar-hide flex flex-col"></div>
+
+                    <button id="next-step-btn" onclick="processPhase()" 
+                            class="mt-4 w-full bg-amber-600 hover:bg-amber-500 text-white py-4 rounded-xl font-bold text-xl transition-all shadow-lg active:scale-95">
+                        PROSEGUI Turno
+                    </button>
+                </div>
+
+                <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50 min-h-[100px]">
+                    <h3 class="text-sm font-cinzel text-red-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+                        <span class="w-2 h-2 bg-red-600 rounded-full"></span>
+                        Cimitero dell'Arena
+                    </h3>
+                    <div id="death-list" class="flex flex-wrap gap-1"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Winner Modal -->
+        <div id="winner-modal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center p-4 z-50">
+            <div class="bg-slate-800 p-10 rounded-3xl border-4 border-amber-500 text-center max-w-md w-full shadow-[0_0_50px_rgba(245,158,11,0.3)]">
+                <div class="text-7xl mb-6">👑</div>
+                <h2 class="text-4xl font-bold text-amber-500 mb-2 font-cinzel tracking-widest uppercase">VINCITORI</h2>
+                <div id="winner-name" class="text-2xl font-cinzel text-white mb-2 leading-tight">Nome</div>
+                <div id="winner-stats" class="text-slate-400 mb-4 text-sm italic">Distretto</div>
+                
+                <div class="bg-slate-900/50 rounded-xl p-4 mb-8 border border-slate-700">
+                    <h4 class="text-amber-500 text-xs font-bold uppercase mb-2 tracking-tighter">Statistiche Finali</h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <div id="winner-kills" class="text-2xl font-bold text-white">0</div>
+                            <div class="text-[10px] text-slate-500 uppercase">Uccisioni</div>
+                        </div>
+                        <div>
+                            <div id="winner-damage" class="text-2xl font-bold text-white">0</div>
+                            <div class="text-[10px] text-slate-500 uppercase">Danni Totali</div>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="resetGame()" class="bg-amber-600 hover:bg-amber-500 text-white w-full py-4 rounded-xl font-bold text-lg shadow-xl">NUOVA EDIZIONE</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let distretti = {}; // { 'Nome Distretto': [ {tributo}, {tributo} ] }
+        let tributi = [];   // Lista piatta per facilitare la logica di gioco
+        let dayCount = 1;
+        let isNight = false;
+        let cornucopiaPhase = true;
+
+        const armi = [
+            { nome: "Pugni Nudi", bonus: 0, icon: "👊" },
+            { nome: "Coltello da Caccia", bonus: 20, icon: "🔪" },
+            { nome: "Spada Arrugginita", bonus: 35, icon: "⚔️" },
+            { nome: "Lancia Professionale", bonus: 45, icon: "🔱" },
+            { nome: "Arco e Frecce", bonus: 30, icon: "🏹" },
+            { nome: "Ascia da Battaglia", bonus: 50, icon: "🪓" }
+        ];
+
+        function createDistrict() {
+            const input = document.getElementById('district-input');
+            const dName = input.value.trim();
+            if (dName && !distretti[dName]) {
+                distretti[dName] = [];
+                input.value = '';
+                updateSetupUI();
+            }
+        }
+
+        function removeDistrict(dName) {
+            delete distretti[dName];
+            updateSetupUI();
+        }
+
+        function addTribute(dName) {
+            const input = document.getElementById(`input-tribute-${dName.replace(/\s+/g, '-')}`);
+            const tName = input.value.trim();
+            
+            // Verifica se il tributo esiste già globalmente
+            const exists = Object.values(distretti).some(d => d.some(t => t.nome === tName));
+
+            if (tName && !exists) {
+                distretti[dName].push({
+                    nome: tName,
+                    distretto: dName,
+                    hp: 100,
+                    maxHp: 100,
+                    arma: armi[0],
+                    vivo: true,
+                    uccisioni: 0,
+                    danniInflitti: 0,
+                    ritorsioneContro: null
+                });
+                input.value = '';
+                updateSetupUI();
+            }
+        }
+
+        function removeTribute(dName, tName) {
+            distretti[dName] = distretti[dName].filter(t => t.nome !== tName);
+            updateSetupUI();
+        }
+
+        function updateSetupUI() {
+            const container = document.getElementById('district-container');
+            container.innerHTML = '';
+            
+            let totalPlayers = 0;
+
+            Object.keys(distretti).forEach(dName => {
+                const dDiv = document.createElement('div');
+                dDiv.className = "bg-slate-900/40 p-5 rounded-xl border border-slate-700 flex flex-col gap-4";
+                
+                let tributesHtml = distretti[dName].map(t => {
+                    totalPlayers++;
+                    return `
+                        <div class="flex justify-between items-center bg-slate-800/50 px-3 py-2 rounded-lg border border-slate-700/50">
+                            <span class="text-sm font-medium">${t.nome}</span>
+                            <button onclick="removeTribute('${dName}', '${t.nome}')" class="text-red-500 hover:text-red-400 font-bold">×</button>
+                        </div>
+                    `;
+                }).join('');
+
+                dDiv.innerHTML = `
+                    <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+                        <h4 class="text-amber-500 font-bold uppercase text-xs tracking-wider truncate mr-2">${dName}</h4>
+                        <button onclick="removeDistrict('${dName}')" class="text-slate-500 hover:text-red-500 text-[10px] uppercase font-bold">Elimina</button>
+                    </div>
+                    <div class="space-y-2 max-h-40 overflow-y-auto scrollbar-hide">
+                        ${tributesHtml || '<p class="text-[10px] text-slate-600 italic">Nessun tributo...</p>'}
+                    </div>
+                    <div class="mt-auto pt-4 flex gap-2">
+                        <input type="text" id="input-tribute-${dName.replace(/\s+/g, '-')}" placeholder="Nuovo tributo..." 
+                               class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs w-full focus:outline-none focus:ring-1 focus:ring-amber-500"
+                               onkeypress="if(event.key==='Enter') addTribute('${dName}')">
+                        <button onclick="addTribute('${dName}')" class="bg-slate-700 hover:bg-slate-600 text-white px-3 py-2 rounded-lg text-xs font-bold">+</button>
+                    </div>
+                `;
+                container.appendChild(dDiv);
+            });
+
+            document.getElementById('player-count').innerText = totalPlayers;
+            document.getElementById('start-btn').disabled = totalPlayers < 2 || Object.keys(distretti).length < 1;
+        }
+
+        function startGame() {
+            tributi = [];
+            Object.values(distretti).forEach(dList => {
+                dList.forEach(t => tributi.push({...t}));
+            });
+
+            dayCount = 1;
+            isNight = false;
+            cornucopiaPhase = true;
+            
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            document.getElementById('event-log').innerHTML = '';
+            document.getElementById('next-step-btn').innerText = "VAI ALLA CORNUCOPIA";
+            
+            renderStatus();
+            logEvent("🔔 I tributi sono pronti sui piedistalli. Il cannone suona l'inizio!", "action");
+        }
+
+        function renderStatus() {
+            const container = document.getElementById('status-container');
+            const alive = tributi.filter(t => t.vivo);
+            container.innerHTML = alive.map(t => {
+                const healthPercent = (t.hp / t.maxHp) * 100;
+                let barColor = healthPercent < 30 ? "bg-red-500" : (healthPercent < 60 ? "bg-yellow-500" : "bg-green-500");
+                return `
+                    <div class="bg-slate-800 p-3 rounded-lg border border-slate-700 shadow-sm">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-sm truncate flex items-center gap-2">
+                                ${t.nome} 
+                                ${t.ritorsioneContro ? '<span class="vendetta-tag">VENDETTA</span>' : ''}
+                                <span class="text-[9px] text-slate-500 font-normal truncate max-w-[80px]">${t.distretto}</span>
+                            </span>
+                            <span class="text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded">${t.arma.icon}</span>
+                        </div>
+                        <div class="health-bar-bg">
+                            <div class="health-bar-fill ${barColor}" style="width: ${healthPercent}%"></div>
+                        </div>
+                        <div class="flex justify-between text-[10px] mt-1 text-slate-500">
+                            <span>HP: ${Math.ceil(t.hp)}</span>
+                            <span>KILLS: ${Math.floor(t.uccisioni)}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('alive-count').innerText = `VIVI: ${alive.length}`;
+            updateDeathList();
+            renderDistrictStatus();
+        }
+
+        function renderDistrictStatus() {
+            const distStatus = document.getElementById('district-status');
+            let html = '';
+            Object.keys(distretti).forEach(dName => {
+                const members = tributi.filter(t => t.distretto === dName);
+                const alives = members.filter(t => t.vivo).length;
+                const isEliminated = alives === 0;
+                html += `
+                    <div class="flex justify-between items-center p-1 px-2 rounded bg-slate-900/50 ${isEliminated ? 'district-eliminated' : ''}">
+                        <span class="truncate pr-2">${dName}</span>
+                        <span class="font-bold">${alives}/${members.length}</span>
+                    </div>
+                `;
+            });
+            distStatus.innerHTML = html;
+        }
+
+        function updateDeathList() {
+            const list = document.getElementById('death-list');
+            const dead = tributi.filter(t => !t.vivo);
+            list.innerHTML = dead.length === 0 
+                ? '<span class="text-slate-600 text-xs italic">Nessun caduto...</span>'
+                : dead.map(t => `<span class="dead-badge">💀 ${t.nome}</span>`).join('');
+        }
+
+        function getCompagno(p1) {
+            return tributi.find(t => t.distretto === p1.distretto && t.vivo && t.nome !== p1.nome);
+        }
+
+        function processPhase() {
+            const winners = getWinners();
+            if (winners.length > 0) {
+                const names = winners.map(w => w.nome).join(' & ');
+                const dist = winners[0].distretto;
+                
+                // Arrotondamento uccisioni per eccesso (3.5 -> 4)
+                const totalKills = Math.ceil(winners.reduce((sum, w) => sum + w.uccisioni, 0));
+                const totalDamage = Math.ceil(winners.reduce((sum, w) => sum + w.danniInflitti, 0));
+                
+                document.getElementById('winner-name').innerText = names;
+                document.getElementById('winner-stats').innerText = dist;
+                document.getElementById('winner-kills').innerText = totalKills;
+                document.getElementById('winner-damage').innerText = totalDamage;
+                
+                document.getElementById('winner-modal').classList.remove('hidden');
+                return;
+            }
+
+            const eventLog = document.getElementById('event-log');
+            eventLog.innerHTML = '';
+
+            if (cornucopiaPhase) {
+                executeCornucopia();
+                cornucopiaPhase = false;
+                isNight = true; 
+                renderStatus();
+                document.getElementById('next-step-btn').innerText = "VAI ALLA NOTTE 1";
+                return;
+            }
+
+            const phaseTitle = isNight ? `Notte ${dayCount}` : `Giorno ${dayCount}`;
+            document.getElementById('current-phase').innerText = phaseTitle;
+
+            let alive = tributi.filter(t => t.vivo).sort(() => Math.random() - 0.5);
+            let processed = new Set();
+
+            for (let i = 0; i < alive.length; i++) {
+                let p1 = alive[i];
+                if (processed.has(p1.nome) || !p1.vivo) continue;
+
+                const roll = Math.random();
+                let p2 = null;
+
+                // Logica Vendetta
+                if (p1.ritorsioneContro) {
+                    const target = tributi.find(t => t.nome === p1.ritorsioneContro && t.vivo);
+                    if (target && !processed.has(target.nome) && Math.random() < 0.85) {
+                        p2 = target;
+                    }
+                }
+
+                if (p2) {
+                    executeAttack(p1, p2);
+                    processed.add(p1.nome);
+                    processed.add(p2.nome);
+                    p1.ritorsioneContro = null;
+                    continue;
+                }
+
+                let potentialTargets = alive.filter(t => !processed.has(t.nome) && t.nome !== p1.nome && t.vivo);
+
+                if (roll < 0.55 && potentialTargets.length > 0) { 
+                    p2 = potentialTargets[Math.floor(Math.random() * potentialTargets.length)];
+                    
+                    if (p1.distretto === p2.distretto) {
+                        logEvent(`🤝 ${p1.nome} e ${p2.nome} (${p1.distretto}) collaborano per la sopravvivenza.`, "safe");
+                        processed.add(p1.nome);
+                        processed.add(p2.nome);
+                        p1.ritorsioneContro = null;
+                        continue;
+                    }
+
+                    executeAttack(p1, p2);
+                    processed.add(p1.nome);
+                    processed.add(p2.nome);
+                } else if (roll < 0.85) { 
+                    executeLoot(p1);
+                    processed.add(p1.nome);
+                } else {
+                    executeSoloEvent(p1);
+                    processed.add(p1.nome);
+                }
+            }
+
+            renderStatus();
+
+            const remainingWinners = getWinners();
+            if (remainingWinners.length > 0) {
+                const btn = document.getElementById('next-step-btn');
+                btn.innerText = "PROCLAMA I VINCITORI";
+                btn.className = "mt-4 w-full bg-green-600 hover:bg-green-500 text-white py-4 rounded-xl font-bold text-xl animate-pulse";
+            } else {
+                if (isNight) dayCount++;
+                isNight = !isNight;
+                document.getElementById('next-step-btn').innerText = isNight ? "PASSA ALLA NOTTE" : "PASSA AL GIORNO SUCCESSIVO";
+            }
+        }
+
+        function executeCornucopia() {
+            document.getElementById('current-phase').innerText = "La Cornucopia";
+            let alive = tributi.filter(t => t.vivo).sort(() => Math.random() - 0.5);
+            let atCenter = [];
+            
+            for (let i = 0; i < alive.length; i++) {
+                const t = alive[i];
+                if (Math.random() < 0.5) {
+                    atCenter.push(t);
+                } else {
+                    logEvent(`🏃 ${t.nome} fugge dall'area centrale.`, "safe");
+                }
+            }
+
+            for (let i = 0; i < atCenter.length; i++) {
+                const t = atCenter[i];
+                if (Math.random() < 0.6) {
+                    const lootType = Math.random();
+                    if (lootType < 0.6) {
+                        t.arma = armi[Math.floor(Math.random() * (armi.length - 1)) + 1];
+                        logEvent(`🏹 ${t.nome} recupera ${t.arma.icon} ${t.arma.nome}!`, "safe");
+                    } else {
+                        t.hp = Math.min(100, t.hp + 15);
+                        logEvent(`📦 ${t.nome} trova uno zaino con medicinali.`, "safe");
+                    }
+                } else {
+                    logEvent(`❗ ${t.nome} cerca rifornimenti ma viene spinto via!`, "action");
+                }
+            }
+
+            const armed = atCenter.filter(t => t.arma.bonus > 0);
+            for (let i = 0; i < atCenter.length; i++) {
+                const t = atCenter[i];
+                if (!t.vivo) continue;
+                const aggressors = armed.filter(a => a.nome !== t.nome && a.vivo && a.distretto !== t.distretto);
+                if (aggressors.length > 0 && Math.random() < 0.45) {
+                    const p1 = aggressors[Math.floor(Math.random() * aggressors.length)];
+                    executeAttack(p1, t);
+                }
+            }
+            logEvent("🔥 Sangue e caos alla Cornucopia!", "cornucopia");
+        }
+
+        function getWinners() {
+            const alive = tributi.filter(t => t.vivo);
+            if (alive.length === 0) return [];
+            const firstDist = alive[0].distretto;
+            const sameDistrict = alive.every(t => t.distretto === firstDist);
+            
+            if (alive.length === 1) return [alive[0]];
+            if (sameDistrict) return alive; // Tutti i superstiti appartengono allo stesso distretto
+            return [];
+        }
+
+        function executeAttack(p1, p2) {
+            const compagno = getCompagno(p1);
+            const isTeamAttack = compagno && Math.random() < 0.35;
+            
+            if (isTeamAttack) {
+                logEvent(`🏹 ATTACCO DI SQUADRA! ${p1.nome} e ${compagno.nome} assaltano ${p2.nome}!`, "team-attack");
+            } else {
+                logEvent(`⚔️ ${p1.nome} attacca ${p2.nome} con ${p1.arma.nome}!`, "action");
+            }
+
+            let baseDamage = 20 + Math.random() * 30;
+            let finalDamage = baseDamage + p1.arma.bonus;
+            p1.danniInflitti += finalDamage;
+
+            if (isTeamAttack) {
+                const teamBonus = 15 + (compagno.arma.bonus * 0.5);
+                finalDamage += teamBonus;
+                compagno.danniInflitti += teamBonus;
+            }
+
+            p2.hp -= finalDamage;
+            
+            if (p2.hp <= 0) {
+                p2.hp = 0; p2.vivo = false;
+                p1.uccisioni++;
+                if (isTeamAttack) compagno.uccisioni += 0.5;
+                
+                logEvent(`⚡ ${p2.nome} è stato eliminato!`, "death");
+                
+                const compP2 = getCompagno(p2);
+                if (compP2 && Math.random() < 0.3) {
+                    compP2.ritorsioneContro = p1.nome;
+                    logEvent(`👁️ ${compP2.nome} giura vendetta per il compagno caduto!`, "damage");
+                }
+            } else {
+                logEvent(`💥 ${p2.nome} subisce danni (-${Math.ceil(finalDamage)} HP).`, isTeamAttack ? "damage-team" : "damage");
+            }
+        }
+
+        function executeLoot(p1) {
+            if (Math.random() > 0.4) {
+                const nuovaArma = armi[Math.floor(Math.random() * (armi.length - 1)) + 1];
+                if (nuovaArma.bonus > p1.arma.bonus) {
+                    p1.arma = nuovaArma;
+                    logEvent(`🎁 Sponsor: ${p1.nome} riceve ${nuovaArma.icon} ${nuovaArma.nome}!`, "safe");
+                } else {
+                    p1.hp = Math.min(100, p1.hp + 25);
+                    logEvent(`🩹 Sponsor: ${p1.nome} riceve cure mediche.`, "safe");
+                }
+            } else {
+                logEvent(`🔍 ${p1.nome} perlustra i dintorni.`, "action");
+            }
+        }
+
+        function executeSoloEvent(p1) {
+            const events = isNight ? [
+                "🌙 {p1} dorme a turno col compagno (se presente).",
+                "🌙 {p1} trema dal freddo nell'oscurità.",
+                "🌙 {p1} vede l'ologramma dei caduti nel cielo."
+            ] : [
+                "☀️ {p1} cerca bacche commestibili.",
+                "☀️ {p1} si nasconde nel fango per mimetizzarsi.",
+                "☀️ {p1} trova una fonte d'acqua pulita."
+            ];
+            logEvent(getRandom(events).replace("{p1}", p1.nome), "action");
+        }
+
+        function logEvent(text, type) {
+            const div = document.createElement('div');
+            div.className = `event-card ${type} p-3 rounded text-sm`;
+            div.innerText = text;
+            const log = document.getElementById('event-log');
+            log.append(div);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function getRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+        function resetGame() {
+            document.getElementById('setup-screen').classList.remove('hidden');
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('winner-modal').classList.add('hidden');
+            updateSetupUI();
+        }
+
+        document.getElementById('district-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') createDistrict();
+        });
+    </script>
+</body>
+</html>
