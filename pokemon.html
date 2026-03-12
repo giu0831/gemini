@@ -3,504 +3,604 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pokémon Battle Simulator</title>
+    <title>Pokémon Pro - Strategic PP Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-        * { box-sizing: border-box; }
-
         body, html {
             margin: 0; padding: 0;
             width: 100%; height: 100%;
-            overflow: hidden;
             font-family: 'Press+Start+2P', cursive;
-            background-color: #000;
+            background-color: #1a1a1a;
+            color: #fff;
+            overflow: hidden;
         }
 
-        .game-container {
-            width: 100vw; height: 100vh;
-            display: flex; flex-direction: column;
-            background-color: #2c3e50;
-            position: relative;
+        .game-container { width: 100vw; height: 100vh; position: relative; display: flex; flex-direction: column; }
+
+        /* Colori Tipi */
+        .type-fire { background-color: #FF421C !important; }
+        .type-water { background-color: #2C9BE3 !important; }
+        .type-grass { background-color: #62B957 !important; }
+        .type-electric { background-color: #FFDC31 !important; color: #333 !important; }
+        .type-psychic { background-color: #FF5587 !important; }
+        .type-normal { background-color: #A8A878 !important; }
+        .type-dragon { background-color: #7766EE !important; }
+        .type-dark { background-color: #4F3A2D !important; }
+        .type-ghost { background-color: #705898 !important; }
+        .type-steel { background-color: #B8B8D0 !important; color: #333 !important; }
+        .type-ice { background-color: #98D8D8 !important; color: #333 !important; }
+        .type-fighting { background-color: #BB5544 !important; }
+        .type-poison { background-color: #A040A0 !important; }
+        .type-ground { background-color: #E0C068 !important; color: #333 !important; }
+        .type-rock { background-color: #B8A038 !important; }
+        .type-bug { background-color: #A8B820 !important; }
+        .type-fairy { background-color: #EE99AC !important; color: #333 !important; }
+        .type-flying { background-color: #A890F0 !important; }
+
+        /* Schermata Selezione */
+        #selection-screen, #switch-overlay, #info-modal, #stats-modal {
+            position: absolute; inset: 0; background: #222; z-index: 500; padding: 15px; display: flex; flex-direction: column;
         }
 
-        /* Schermata di Selezione */
-        #start-screen {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
-            display: flex; flex-direction: column;
-            justify-content: flex-start; align-items: center;
-            z-index: 200; color: white; text-align: center;
-            padding: 40px 20px; overflow-y: auto;
+        #info-modal, #stats-modal {
+            z-index: 1000;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
         }
 
-        .starter-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 15px; width: 100%; max-width: 900px;
-            margin-bottom: 30px;
+        .filter-bar { display: flex; gap: 8px; overflow-x: auto; padding: 10px 0; margin-bottom: 10px; border-bottom: 2px solid #444; }
+        .type-chip { padding: 6px 10px; border-radius: 4px; font-size: 7px; cursor: pointer; white-space: nowrap; opacity: 0.6; }
+        .type-chip.active { opacity: 1; outline: 2px solid white; }
+
+        .pokedex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; overflow-y: auto; flex: 1; padding-bottom: 80px; }
+        .pkmn-card { background: #333; border: 3px solid #444; border-radius: 8px; padding: 8px; cursor: pointer; text-align: center; position: relative; }
+        .pkmn-card.selected { border-color: #ffcb05; background: #444; }
+        
+        .info-btn { 
+            position: absolute; top: 2px; left: 2px; 
+            background: #555; color: white; width: 18px; height: 18px; 
+            border-radius: 50%; font-size: 8px; display: flex; 
+            justify-content: center; align-items: center; border: 1px solid #777;
         }
+        
+        .sel-num { position: absolute; top: -5px; right: -5px; background: #ffcb05; color: #000; width: 22px; height: 22px; border-radius: 50%; display: none; justify-content: center; align-items: center; font-size: 8px; border: 2px solid #000; }
+        .selected .sel-num { display: flex; }
 
-        .starter-card {
-            background: rgba(255, 255, 255, 0.1);
-            border: 4px solid transparent; border-radius: 12px;
-            padding: 10px; cursor: pointer; transition: all 0.2s;
-            position: relative;
-        }
+        /* Battle Arena */
+        .battle-scene { flex: 1; background: linear-gradient(to bottom, #78C850 50%, #C0F8A0 50%); position: relative; display: none; overflow: hidden; }
+        
+        .status-box { background: #fff; border: 4px solid #333; color: #333; padding: 8px; width: 220px; position: absolute; z-index: 10; box-shadow: 4px 4px 0 rgba(0,0,0,0.2); cursor: pointer; }
+        .status-box:hover { background: #f0f0f0; }
+        .hp-fill { height: 100%; background: #4CAF50; transition: width 0.5s; }
+        
+        #enemy-status { top: 15%; left: 5%; }
+        #player-status { bottom: 25%; right: 5%; }
 
-        .starter-card:hover { background: rgba(255, 255, 255, 0.2); transform: scale(1.05); }
-        .starter-card.selected { border-color: #FFD700; background: rgba(255, 215, 0, 0.3); }
+        .pkmn-img { width: 180px; height: 180px; object-fit: contain; image-rendering: pixelated; position: absolute; z-index: 4; transition: transform 0.2s; }
+        #e-img { top: 28%; right: 28%; } 
+        #p-img { bottom: 5%; left: 10%; } 
 
-        .selection-badge {
-            position: absolute; top: -10px; right: -10px;
-            background: #FFD700; color: #000;
-            width: 25px; height: 25px; border-radius: 50%;
-            display: none; justify-content: center; align-items: center;
-            font-size: 12px; font-weight: bold; border: 2px solid #000;
-        }
-        .starter-card.selected .selection-badge { display: flex; }
+        .trainer-container { position: absolute; top: 5%; right: 5%; display: flex; flex-direction: column; align-items: center; z-index: 5; }
+        .trainer-img { width: 110px; height: 110px; border-radius: 50%; border: 4px solid #ffcb05; object-fit: cover; background: #fff; box-shadow: 0 0 15px rgba(255, 203, 5, 0.4); }
 
-        /* Arena di Battaglia */
-        .battle-scene {
-            flex: 1;
-            background: linear-gradient(to bottom, #87CEEB 0%, #87CEEB 60%, #90EE90 60%, #90EE90 100%);
-            position: relative; overflow: hidden;
-            image-rendering: pixelated; display: none;
-        }
+        /* UI Control */
+        .ui-tray { height: 180px; background: #f0f0f0; border-top: 6px solid #333; display: none; grid-template-columns: 1.2fr 1fr; }
+        .msg-box { padding: 15px; color: #333; font-size: 11px; border-right: 4px solid #333; line-height: 1.6; display: flex; align-items: center; }
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 10px; position: relative; }
+        .btn-action { border: 4px solid #333; font-family: inherit; font-size: 8px; padding: 10px; cursor: pointer; transition: all 0.1s; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        .btn-action:active { transform: scale(0.95); }
+        .pp-info { font-size: 7px; display: block; margin-top: 4px; font-weight: bold; }
+        .pp-low { color: #ef4444; }
+        .move-damage { font-size: 7px; font-weight: bold; color: #ffcb05; margin-top: 2px; text-shadow: 1px 1px 0 #000; }
+        .btn-back { grid-column: span 2; background: #999 !important; color: white !important; padding: 5px !important; border-width: 3px !important; }
 
-        /* Avatar Avversario */
-        .opponent-avatar-container {
-            position: absolute; top: 20px; right: 20px;
-            display: flex; flex-direction: column; align-items: center;
-            z-index: 50;
-        }
-        .opponent-avatar {
-            width: 150px; height: 150px;
-            border-radius: 50%; border: 6px solid #fff;
-            background-color: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-
-        /* Barre di Stato */
-        .status-card {
-            background-color: #f8f8f8; border: 4px solid #333;
-            padding: 10px; width: 260px; position: absolute;
-            box-shadow: 4px 4px 0px rgba(0,0,0,0.2); z-index: 10;
-        }
-        .enemy-status { top: 40px; left: 40px; border-bottom-right-radius: 20px; }
-        .player-status { bottom: 40px; right: 40px; border-top-left-radius: 20px; }
-
-        .health-bar-container { background-color: #555; border: 2px solid #333; height: 12px; width: 100%; margin-top: 5px; }
-        .health-bar-fill { height: 100%; background-color: #4CAF50; width: 100%; transition: width 0.5s ease-in-out; }
-
-        /* Posizionamento Pokémon e Ombre */
-        .pokemon-stage {
-            position: absolute;
-            display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
-            width: 350px; height: 350px;
-        }
-        .enemy-stage { top: 15%; right: 10%; }
-        .player-stage { bottom: 5%; left: 10%; }
-
-        .platform {
-            background: rgba(0,0,0,0.2); border-radius: 50%;
-            width: 280px; height: 60px;
-            position: absolute; bottom: 10px; z-index: 1;
-        }
-
-        .pokemon-img {
-            width: 280px; height: 280px;
-            object-fit: contain; z-index: 5;
-            position: relative; 
-            bottom: -15px;
-        }
-        .player-stage .pokemon-img { 
-            width: 340px; height: 340px; 
-            bottom: -20px;
-        }
-
-        /* UI Tray */
-        .ui-tray { height: 140px; background-color: #fff; border-top: 6px solid #333; display: none; grid-template-columns: 1.2fr 1fr; z-index: 100; }
-        .dialog-box { padding: 20px; font-size: 14px; line-height: 1.5; display: flex; align-items: center; border-right: 4px solid #333; }
-        .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; background-color: #333; }
-        .btn-move { background-color: #fff; border: none; cursor: pointer; font-family: 'Press+Start+2P', cursive; font-size: 10px; text-transform: uppercase; }
-        .btn-move:hover:not(:disabled) { background-color: #e0e0e0; }
-
-        /* Animazioni */
-        .bounce { animation: bounce 2s infinite ease-in-out; }
-        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
-
-        #victory-screen, #defeat-screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(255, 255, 255, 0.9);
-            display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 300;
-        }
-
-        @media (max-width: 768px) {
-            .opponent-avatar { width: 80px; height: 80px; }
-            .ui-tray { grid-template-columns: 1fr; height: 180px; }
-            .player-status { bottom: 190px; right: 10px; }
-            .enemy-status { left: 10px; top: 10px; }
-            .player-stage { left: -20px; }
-            .enemy-stage { right: -20px; }
-        }
+        #switch-overlay { display: none; z-index: 600; background: rgba(0,0,0,0.9); }
+        .switch-list { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; overflow-y: auto; }
+        .switch-item { background: #333; border: 3px solid #666; padding: 10px; display: flex; align-items: center; gap: 15px; cursor: pointer; }
+        .switch-item.ko { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
     </style>
 </head>
 <body>
 
-    <div class="game-container">
-        
-        <!-- Selezione Squadra -->
-        <div id="start-screen">
-            <h1 class="text-2xl mb-4 text-yellow-400" style="text-shadow: 3px 3px 0 #000">POKÉMON BATTLE</h1>
-            <p class="mb-2 text-[10px]">Componi la tua squadra (da 1 a 6):</p>
-            <p class="mb-6 text-[8px] text-yellow-200 uppercase">I Leggendari hanno più HP e infliggono +50% danni!</p>
-            
-            <div id="starter-grid" class="starter-grid"></div>
-
-            <div class="sticky bottom-0 bg-black/60 p-4 rounded-xl backdrop-blur-md border-t-2 border-white/20">
-                <button id="start-btn" disabled onclick="startGame()" class="bg-gray-500 text-white px-10 py-4 border-b-4 border-gray-700 font-bold opacity-50 cursor-not-allowed transition-all">
-                    INIZIA CON <span id="selection-count">0</span> POKÉMON
-                </button>
-            </div>
+<div class="game-container">
+    <!-- Selezione Squadra -->
+    <div id="selection-screen">
+        <h2 class="text-[10px] text-yellow-400 text-center mb-2">SCEGLI LA TUA SQUADRA (1-6)</h2>
+        <div class="filter-bar" id="type-filters">
+            <div class="type-chip active bg-gray-500" onclick="filterByType('All', this)">TUTTI</div>
         </div>
-
-        <!-- Schermate Finali -->
-        <div id="victory-screen">
-            <h1 class="text-yellow-500 text-4xl mb-4 text-center">CAMPIONE!</h1>
-            <p class="text-[12px] mb-8 text-center px-4">Hai sconfitto l'intera squadra di EMANUELA AISA!</p>
-            <button onclick="location.reload()" class="bg-blue-600 text-white p-4 font-bold border-b-4 border-blue-900 px-8">NUOVA SFIDA</button>
-        </div>
-
-        <div id="defeat-screen">
-            <h1 class="text-red-500 text-4xl mb-4">SCONFITTO!</h1>
-            <p class="text-[12px] mb-8">Non hai più Pokémon in grado di lottare...</p>
-            <button onclick="location.reload()" class="bg-red-600 text-white p-4 font-bold border-b-4 border-red-900 px-8">RIPROVA</button>
-        </div>
-
-        <!-- Arena -->
-        <div class="battle-scene" id="arena">
-            <!-- Avversario -->
-            <div class="opponent-avatar-container">
-                <img src="https://lh3.googleusercontent.com/a-/ALV-UjX5WaAKPyFOdPE72EV2dbV2IvSo1Xbdv12mYFqvBUM9gWaaMoRU=s150-c" class="opponent-avatar" alt="Emanuela Aisa">
-                <div class="text-[10px] mt-2 text-white drop-shadow-lg font-bold">EMANUELA AISA</div>
-            </div>
-
-            <div class="status-card enemy-status" id="enemy-card">
-                <div class="flex justify-between text-[10px] mb-1">
-                    <span id="enemy-name" class="font-bold">---</span>
-                    <span>Lv50</span>
-                </div>
-                <div class="health-bar-container">
-                    <div id="enemy-hp-bar" class="health-bar-fill"></div>
-                </div>
-            </div>
-
-            <div id="enemy-stage" class="pokemon-stage enemy-stage">
-                <img id="enemy-sprite" src="" class="pokemon-img bounce">
-                <div class="platform"></div>
-            </div>
-
-            <!-- Giocatore -->
-            <div id="player-card" class="status-card player-status">
-                <div class="flex justify-between text-[10px] mb-1">
-                    <span id="player-name-ui" class="font-bold">---</span>
-                    <span>Lv50</span>
-                </div>
-                <div class="health-bar-container">
-                    <div id="player-hp-bar" class="health-bar-fill"></div>
-                </div>
-                <div class="text-[9px] text-right mt-1" id="player-hp-text">--- / --- HP</div>
-            </div>
-
-            <div id="player-stage" class="pokemon-stage player-stage">
-                <img id="player-sprite" src="" class="pokemon-img bounce" style="animation-delay: 0.5s">
-                <div class="platform"></div>
-            </div>
-        </div>
-
-        <!-- Controlli -->
-        <div class="ui-tray" id="ui-tray">
-            <div id="message-box" class="dialog-box">
-                Cosa farà il tuo Pokémon?
-            </div>
-            <div class="controls-grid" id="controls">
-                <button id="move-1" onclick="handlePlayerTurn(0)" class="btn-move action-btn"></button>
-                <button id="move-2" onclick="handlePlayerTurn(1)" class="btn-move action-btn"></button>
-                <button id="move-3" onclick="handlePlayerTurn(2)" class="btn-move action-btn"></button>
-                <button id="move-4" onclick="handlePlayerTurn(3)" class="btn-move action-btn"></button>
-            </div>
+        <div id="pokedex-grid" class="pokedex-grid"></div>
+        <div class="fixed bottom-0 left-0 w-full p-4 bg-black/80 border-t-4 border-yellow-500 flex justify-between items-center z-[550]">
+            <span id="sel-count" class="text-[8px]">Selezionati: 0/6</span>
+            <button id="start-btn" onclick="startBattle()" disabled class="bg-gray-600 px-6 py-2 text-[10px] opacity-50">SFIDA EMANUELA</button>
         </div>
     </div>
 
-    <script>
-        // Nota: i leggendari hanno HP base molto più alti e la flag isLegendary
-        const POKEMON_DATA = [
-            { name: "Bulbasaur", id: 1, hp: 120, moves: [{n:"Azione", d:15}, {n:"Foglia Lama", d:35}, {n:"Solarraggio", d:55}, {n:"Frustata", d:20}] },
-            { name: "Charmander", id: 4, hp: 100, moves: [{n:"Graffio", d:15}, {n:"Braciere", d:30}, {n:"Lanciafiamme", d:50}, {n:"Ira", d:25}] },
-            { name: "Squirtle", id: 7, hp: 110, moves: [{n:"Azione", d:15}, {n:"Pistolacqua", d:30}, {n:"Idropompa", d:50}, {n:"Bolla", d:20}] },
-            { name: "Pikachu", id: 25, hp: 95, moves: [{n:"Tuonoshock", d:25}, {n:"Att. Rapido", d:20}, {n:"Fulmine", d:45}, {n:"Codaferro", d:30}] },
-            { name: "Gengar", id: 94, hp: 130, moves: [{n:"Palla Ombra", d:45}, {n:"Mangiasogni", d:35}, {n:"Neropulsar", d:40}, {n:"Urto", d:15}] },
-            { name: "Lucario", id: 448, hp: 125, moves: [{n:"Forzasfera", d:45}, {n:"Zuffa", d:50}, {n:"Pugnoscarica", d:25}, {n:"Ossoraffica", d:30}] },
-            { name: "Greninja", id: 658, hp: 115, moves: [{n:"Idropulsar", d:35}, {n:"Acquagetto", d:25}, {n:"Nottesferza", d:40}, {n:"Idropompa", d:50}] },
-            { name: "Rayquaza", id: 384, hp: 300, isLegendary: true, moves: [{n:"Oltraggio", d:60}, {n:"Extrarapido", d:35}, {n:"Dragopulsar", d:50}, {n:"Tuono", d:45}] },
-            { name: "Snorlax", id: 143, hp: 220, moves: [{n:"Corpo a Corpo", d:40}, {n:"Morso", d:25}, {n:"Terremoto", d:45}, {n:"Riposo", d:10}] },
-            { name: "Mewtwo", id: 150, hp: 280, isLegendary: true, moves: [{n:"Psichico", d:55}, {n:"Palla Ombra", d:45}, {n:"Aurasfera", d:40}, {n:"Ripresa", d:15}] },
-            { name: "Arcanine", id: 59, hp: 140, moves: [{n:"Fuococarica", d:50}, {n:"Morso", d:25}, {n:"Extrarapido", d:35}, {n:"Lanciafiamme", d:40}] },
-            { name: "Dragonite", id: 149, hp: 180, moves: [{n:"Dragospiro", d:35}, {n:"Alidacciaio", d:40}, {n:"Tuonopugno", d:40}, {n:"Iper Raggio", d:65}] }
-        ];
+    <!-- Info Pokémon Modal -->
+    <div id="info-modal" onclick="closeInfo()">
+        <div class="bg-white text-black p-6 border-4 border-yellow-500 max-w-[90%] w-[300px] text-center" onclick="event.stopPropagation()">
+            <img id="info-img" src="" class="mx-auto mb-2" width="100">
+            <h3 id="info-name" class="text-[12px] font-bold mb-2">---</h3>
+            <div id="info-type" class="text-[8px] mb-4 p-1 rounded inline-block text-white">---</div>
+            <div class="text-[8px] text-left space-y-2">
+                <p><strong>HP:</strong> <span id="info-hp">0</span></p>
+                <p><strong>MOSSE E LIMITI PP:</strong></p>
+                <ul id="info-moves" class="space-y-1"></ul>
+            </div>
+            <button onclick="closeInfo()" class="mt-6 bg-red-600 text-white p-2 text-[8px] w-full">CHIUDI</button>
+        </div>
+    </div>
 
-        const enemyTeam = [
-            { name: "HOUNDOOM", id: 229, hp: 120, moves: ["LANCIAFIAMME", "SGRANOCCHIO"] },
-            { name: "SPIRITOMB", id: 442, hp: 130, moves: ["PALLA OMBRA", "NEROPULSAR"] },
-            { name: "SHARPEDO", id: 319, hp: 120, moves: ["IDROPOMPA", "ACQUAGETTO"] },
-            { name: "ZOROARK", id: 571, hp: 125, moves: ["NOTTURFORZA", "URTO"] },
-            { name: "YVELTAL", id: 717, hp: 320, isLegendary: true, moves: ["ALI DEL DESTINO", "TIFONE"] },
-            { name: "DARKRAI", id: 491, hp: 280, isLegendary: true, moves: ["VUOTOTETRO", "GELO RAGGIO"] }
-        ];
+    <!-- Pannello Statistiche in Battaglia -->
+    <div id="stats-modal" onclick="closeStats()">
+        <div class="bg-white text-black p-6 border-4 border-blue-500 max-w-[90%] w-[300px] text-center" onclick="event.stopPropagation()">
+            <h3 class="text-[10px] font-bold mb-4">STATISTICHE ATTUALI</h3>
+            <div id="stats-content" class="text-[8px] text-left space-y-4"></div>
+            <p class="text-[6px] mt-4 text-gray-500 italic">I bonus accumulati influenzano i danni inflitti/ricevuti.</p>
+            <button onclick="closeStats()" class="mt-6 bg-blue-600 text-white p-2 text-[8px] w-full">TORNA ALLA LOTTA</button>
+        </div>
+    </div>
 
-        let selectedTeamIndices = [];
-        let playerSquad = [];
-        let currentPlayerIndex = 0;
-        let currentEnemyIndex = 0;
-        let enemyHP = 100;
-        let isTurnInProgress = false;
+    <!-- Cambio Pokémon -->
+    <div id="switch-overlay">
+        <h2 class="text-center text-[10px] text-white mb-4">CAMBIA POKÉMON</h2>
+        <div id="switch-list" class="switch-list"></div>
+        <button onclick="closeSwitch()" id="back-btn" class="mt-4 bg-red-600 p-3 text-[10px]">ANNULLA</button>
+    </div>
 
-        function initGrid() {
-            const grid = document.getElementById('starter-grid');
-            POKEMON_DATA.forEach((pk, index) => {
-                const card = document.createElement('div');
-                card.className = 'starter-card';
-                card.innerHTML = `
-                    <div class="selection-badge"></div>
-                    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pk.id}.png" width="90" class="mx-auto">
-                    <div class="text-[9px] mt-2 font-bold ${pk.isLegendary ? 'text-yellow-400' : ''}">${pk.name.toUpperCase()}</div>
-                    ${pk.isLegendary ? '<div class="text-[7px] text-yellow-500">LEGGENDARIO</div>' : ''}
-                `;
-                card.onclick = () => toggleSelection(index, card);
-                grid.appendChild(card);
+    <!-- Campo di Battaglia -->
+    <div id="arena" class="battle-scene">
+        <div class="trainer-container">
+            <img src="https://lh3.googleusercontent.com/a-/ALV-UjX5WaAKPyFOdPE72EV2dbV2IvSo1Xbdv12mYFqvBUM9gWaaMoRU=s150-c" class="trainer-img" id="trainer-pfp">
+            <p class="text-[7px] mt-2 bg-black text-yellow-400 p-1 px-2 rounded border-2 border-yellow-400">EMANUELA AISA</p>
+        </div>
+
+        <div id="enemy-status" class="status-box rounded-br-2xl border-r-8">
+            <div class="flex justify-between text-[10px] mb-1"><span id="e-name">---</span><span>Lv.100</span></div>
+            <div class="h-3 border-2 border-black rounded bg-gray-700"><div id="e-hp-bar" class="hp-fill"></div></div>
+        </div>
+
+        <img id="e-img" src="" class="pkmn-img">
+
+        <div id="player-status" class="status-box rounded-tl-2xl border-l-8" onclick="showStats()">
+            <div class="flex justify-between text-[10px] mb-1"><span id="p-name">---</span><span>Lv.100</span></div>
+            <div class="h-3 border-2 border-black rounded bg-gray-700"><div id="p-hp-bar" class="hp-fill"></div></div>
+            <div class="flex justify-between items-center mt-1">
+                <span class="text-[6px] text-blue-600 font-bold underline">INFO STATS</span>
+                <span class="text-[8px]" id="p-hp-text">0/0 HP</span>
+            </div>
+        </div>
+
+        <img id="p-img" src="" class="pkmn-img">
+    </div>
+
+    <!-- Comandi -->
+    <div id="ui" class="ui-tray">
+        <div class="msg-box" id="msg-text">Cosa farà il tuo Pokémon?</div>
+        
+        <div id="main-menu" class="action-grid">
+            <button onclick="showMoves()" class="btn-action bg-white text-black">LOTTA</button>
+            <button onclick="openSwitch(true)" class="btn-action bg-white text-black">POKÉMON</button>
+            <button disabled class="btn-action bg-gray-300 text-gray-400">ZAINO</button>
+            <button disabled class="btn-action bg-gray-300 text-gray-400">FUGA</button>
+        </div>
+
+        <div id="moves-menu" class="action-grid hidden">
+            <button id="m0" onclick="handleMove(0)" class="btn-action text-white"></button>
+            <button id="m1" onclick="handleMove(1)" class="btn-action text-white"></button>
+            <button id="m2" onclick="handleMove(2)" class="btn-action text-white"></button>
+            <button id="m3" onclick="handleMove(3)" class="btn-action text-white"></button>
+            <button onclick="showMainMenu()" class="btn-action btn-back">INDIETRO</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const TYPES = ["Normal", "Fire", "Water", "Grass", "Electric", "Ice", "Fighting", "Poison", "Ground", "Flying", "Psychic", "Bug", "Rock", "Ghost", "Dragon", "Dark", "Steel", "Fairy"];
+
+    // Pokémon Database
+    const POKEMON_DB = [
+        {id:3, n:"Venusaur", t:"Grass", hp:180}, {id:6, n:"Charizard", t:"Fire", hp:178}, {id:9, n:"Blastoise", t:"Water", hp:179},
+        {id:25, n:"Pikachu", t:"Electric", hp:135}, {id:26, n:"Raichu", t:"Electric", hp:160}, {id:34, n:"Nidoking", t:"Poison", hp:181},
+        {id:38, n:"Ninetales", t:"Fire", hp:173}, {id:59, n:"Arcanine", t:"Fire", hp:190}, {id:65, n:"Alakazam", t:"Psychic", hp:155},
+        {id:68, n:"Machamp", t:"Fighting", hp:190}, {id:94, n:"Gengar", t:"Ghost", hp:160}, {id:103, n:"Exeggutor", t:"Grass", hp:195},
+        {id:121, n:"Starmie", t:"Water", hp:160}, {id:123, n:"Scyther", t:"Bug", hp:170}, {id:130, n:"Gyarados", t:"Water", hp:195},
+        {id:131, n:"Lapras", t:"Water", hp:230}, {id:134, n:"Vaporeon", t:"Water", hp:230}, {id:135, n:"Jolteon", t:"Electric", hp:165},
+        {id:136, n:"Flareon", t:"Fire", hp:165}, {id:143, n:"Snorlax", t:"Normal", hp:260}, {id:144, n:"Articuno", t:"Ice", hp:190},
+        {id:145, n:"Zapdos", t:"Electric", hp:190}, {id:146, n:"Moltres", t:"Fire", hp:190}, {id:149, n:"Dragonite", t:"Dragon", hp:191},
+        {id:150, n:"Mewtwo", t:"Psychic", hp:206}, {id:157, n:"Typhlosion", t:"Fire", hp:178}, {id:160, n:"Feraligatr", t:"Water", hp:185},
+        {id:181, n:"Ampharos", t:"Electric", hp:190}, {id:196, n:"Espeon", t:"Psychic", hp:165}, {id:197, n:"Umbreon", t:"Dark", hp:195},
+        {id:212, n:"Scizor", t:"Bug", hp:170}, {id:214, n:"Heracross", t:"Bug", hp:180}, {id:227, n:"Skarmory", t:"Steel", hp:165},
+        {id:243, n:"Raikou", t:"Electric", hp:190}, {id:244, n:"Entei", t:"Fire", hp:215}, {id:245, n:"Suicune", t:"Water", hp:200},
+        {id:248, n:"Tyranitar", t:"Rock", hp:200}, {id:249, n:"Lugia", t:"Psychic", hp:206}, {id:250, n:"Ho-Oh", t:"Fire", hp:206},
+        {id:254, n:"Sceptile", t:"Grass", hp:170}, {id:257, n:"Blaziken", t:"Fire", hp:180}, {id:260, n:"Swampert", t:"Water", hp:200},
+        {id:282, n:"Gardevoir", t:"Psychic", hp:168}, {id:306, n:"Aggron", t:"Steel", hp:170}, {id:330, n:"Flygon", t:"Dragon", hp:180},
+        {id:373, n:"Salamence", t:"Dragon", hp:195}, {id:376, n:"Metagross", t:"Steel", hp:180}, {id:380, n:"Latias", t:"Dragon", hp:180},
+        {id:381, n:"Latios", t:"Dragon", hp:180}, {id:382, n:"Kyogre", t:"Water", hp:200}, {id:383, n:"Groudon", t:"Ground", hp:200},
+        {id:384, n:"Rayquaza", t:"Dragon", hp:210}, {id:445, n:"Garchomp", t:"Dragon", hp:208}, {id:448, n:"Lucario", t:"Fighting", hp:170},
+        {id:462, n:"Magnezone", t:"Steel", hp:170}, {id:464, n:"Rhyperior", t:"Ground", hp:215}, {id:466, n:"Electivire", t:"Electric", hp:175},
+        {id:467, n:"Magmortar", t:"Fire", hp:175}, {id:468, n:"Togekiss", t:"Fairy", hp:185}, {id:470, n:"Leafeon", t:"Grass", hp:165},
+        {id:471, n:"Glaceon", t:"Ice", hp:165}, {id:483, n:"Dialga", t:"Steel", hp:200}, {id:484, n:"Palkia", t:"Water", hp:190},
+        {id:487, n:"Giratina", t:"Ghost", hp:250}, {id:491, n:"Darkrai", t:"Dark", hp:170}, {id:493, n:"Arceus", t:"Normal", hp:220},
+        {id:18, n:"Pidgeot", t:"Flying", hp:183}, {id:112, n:"Rhydon", t:"Ground", hp:205}, {id:133, n:"Eevee", t:"Normal", hp:115},
+        {id:142, n:"Aerodactyl", t:"Rock", hp:180}, {id:215, n:"Sneasel", t:"Dark", hp:115}, {id:302, n:"Sableye", t:"Dark", hp:110},
+        {id:359, n:"Absol", t:"Dark", hp:165}, {id:475, n:"Gallade", t:"Psychic", hp:168}, {id:635, n:"Hydreigon", t:"Dark", hp:192},
+        {id:700, n:"Sylveon", t:"Fairy", hp:195}, {id:392, n:"Infernape", t:"Fire", hp:176}, {id:395, n:"Empoleon", t:"Water", hp:184},
+        {id:407, n:"Roserade", t:"Grass", hp:160}, {id:474, n:"Porygon-Z", t:"Normal", hp:185}, {id:479, n:"Rotom", t:"Electric", hp:150},
+        {id:488, n:"Cresselia", t:"Psychic", hp:220}, {id:494, n:"Victini", t:"Psychic", hp:200}, {id:497, n:"Serperior", t:"Grass", hp:175},
+        {id:500, n:"Emboar", t:"Fire", hp:210}, {id:503, n:"Samurott", t:"Water", hp:195}, {id:530, n:"Excadrill", t:"Ground", hp:210},
+        {id:553, n:"Krookodile", t:"Ground", hp:195}, {id:560, n:"Scrafty", t:"Dark", hp:165}, {id:571, n:"Zoroark", t:"Dark", hp:160},
+        {id:609, n:"Chandelure", t:"Ghost", hp:160}, {id:612, n:"Haxorus", t:"Dragon", hp:176}, {id:637, n:"Volcarona", t:"Bug", hp:185},
+        {id:643, n:"Reshiram", t:"Fire", hp:200}, {id:644, n:"Zekrom", t:"Electric", hp:200}, {id:658, n:"Greninja", t:"Water", hp:172},
+        {id:663, n:"Talonflame", t:"Flying", hp:178}, {id:681, n:"Aegislash", t:"Steel", hp:160}, {id:724, n:"Decidueye", t:"Grass", hp:178},
+        {id:778, n:"Mimikyu", t:"Ghost", hp:155}, {id:800, n:"Necrozma", t:"Psychic", hp:197}
+    ];
+
+    const MOVE_TEMPLATES = {
+        Fire: [{n:"Braciere", p:40}, {n:"Lanciafiamme", p:90}, {n:"Fuocobomba", p:110}, {n:"Danzaspada", s:"atk", v:2, desc: "+2 ATK"}],
+        Water: [{n:"Pistolacqua", p:40}, {n:"Surf", p:90}, {n:"Idropompa", p:110}, {n:"Ferroscudo", s:"def", v:2, desc: "+2 DEF"}],
+        Grass: [{n:"Frustata", p:45}, {n:"Fogliamagica", p:60}, {n:"Solarraggio", p:120}, {n:"Sintesi", s:"hp", v:50, desc: "Cura 50%"}],
+        Electric: [{n:"Tuonoshock", p:40}, {n:"Fulmine", p:90}, {n:"Tuono", p:110}, {n:"Agilità", s:"atk", v:2, desc: "+2 ATK"}],
+        Psychic: [{n:"Confusione", p:50}, {n:"Psichico", p:90}, {n:"Palla Ombra", p:80}, {n:"Calmamente", s:"atk", v:1, desc: "+1 ATK"}],
+        Normal: [{n:"Azione", p:40}, {n:"Schianto", p:80}, {n:"Iper Raggio", p:120}, {n:"Rafforzatore", s:"def", v:1, desc: "+1 DEF"}],
+        Dark: [{n:"Sgranocchio", p:80}, {n:"Finta", p:60}, {n:"Neropulsar", p:85}, {n:"Congiura", s:"atk", v:2, desc: "+2 ATK"}],
+        Ghost: [{n:"Ombrartigli", p:70}, {n:"Palla Ombra", p:80}, {n:"Maledizione", s:"atk", v:1, desc: "+1 ATK"}, {n:"Sbigoattacco", p:70}],
+        Bug: [{n:"Tagliofuria", p:40}, {n:"Forbice X", p:80}, {n:"Coleottero", p:90}, {n:"Eledanza", s:"atk", v:1, desc: "+1 ATK"}],
+        Rock: [{n:"Sassata", p:50}, {n:"Frana", p:75}, {n:"Pietrataglio", p:100}, {n:"Lucidatura", s:"atk", v:2, desc: "+2 ATK"}],
+        Ground: [{n:"Fango", p:55}, {n:"Terremoto", p:100}, {n:"Magnitudo", p:70}, {n:"Abisso", p:120}],
+        Poison: [{n:"Smog", p:30}, {n:"Fangobomba", p:90}, {n:"Velenoshock", p:65}, {n:"Velenotrappola", s:"def", v:1, desc: "+1 DEF"}],
+        Fighting: [{n:"Colpo", p:40}, {n:"Zuffa", p:120}, {n:"Sottomissione", p:80}, {n:"Granfisico", s:"atk", v:1, desc: "+1 ATK"}],
+        Fairy: [{n:"Vento di Fata", p:40}, {n:"Forza Lunare", p:95}, {n:"Magibrillio", p:80}, {n:"Desiderio", s:"hp", v:50, desc: "Cura 50%"}],
+        Dragon: [{n:"Ira di Drago", p:40}, {n:"Dragopulsar", p:85}, {n:"Oltraggio", p:120}, {n:"Danza Drago", s:"atk", v:1, desc: "+1 ATK"}],
+        Steel: [{n:"Ferrartigli", p:50}, {n:"Metaltestata", p:80}, {n:"Cannonflash", p:80}, {n:"Ferroscudo", s:"def", v:2, desc: "+2 DEF"}],
+        Ice: [{n:"Polvespazzola", p:40}, {n:"Geloscheggia", p:40}, {n:"Geloraggio", p:90}, {n:"Bora", p:110}],
+        Flying: [{n:"Eterelama", p:75}, {n:"Baldeali", p:120}, {n:"Volo", p:90}, {n:"Trespolo", s:"hp", v:50, desc: "Cura 50%"}]
+    };
+
+    const EMANUELA_TEAM = [
+        { n: "Houndoom", id: 229, hp: 175, t: "Dark" },
+        { n: "Spiritomb", id: 442, hp: 150, t: "Ghost" },
+        { n: "Sharpedo", id: 319, hp: 170, t: "Water" },
+        { n: "Zoroark", id: 571, hp: 160, t: "Dark" },
+        { n: "Yveltal", id: 717, hp: 226, t: "Dark" },
+        { n: "Darkrai", id: 491, hp: 170, t: "Dark" }
+    ];
+
+    let selectedIdx = [];
+    let playerTeam = [];
+    let enemyTeam = [];
+    let currentEnemyPIdx = 0;
+    let currentPIdx = 0;
+    let isBusy = false;
+    let forceSwitchMode = false;
+    let activeTypeFilter = "All";
+
+    function init() {
+        const filterBar = document.getElementById('type-filters');
+        TYPES.forEach(t => {
+            const chip = document.createElement('div');
+            chip.className = `type-chip type-${t.toLowerCase()}`;
+            chip.innerText = t.toUpperCase();
+            chip.onclick = () => filterByType(t, chip);
+            filterBar.appendChild(chip);
+        });
+        renderGrid();
+    }
+
+    function filterByType(type, el) {
+        activeTypeFilter = type;
+        document.querySelectorAll('.type-chip').forEach(c => c.classList.remove('active', 'bg-gray-500'));
+        el.classList.add('active');
+        if(type === 'All') el.classList.add('bg-gray-500');
+        renderGrid();
+    }
+
+    function renderGrid() {
+        const grid = document.getElementById('pokedex-grid');
+        grid.innerHTML = '';
+        POKEMON_DB.filter(p => activeTypeFilter === "All" || p.t === activeTypeFilter).forEach(p => {
+            const realIdx = POKEMON_DB.indexOf(p);
+            const card = document.createElement('div');
+            card.className = `pkmn-card ${selectedIdx.includes(realIdx) ? 'selected' : ''}`;
+            card.innerHTML = `
+                <div class="info-btn" onclick="showInfo(event, ${realIdx})">i</div>
+                <div class="sel-num">${selectedIdx.indexOf(realIdx) + 1}</div>
+                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id}.png" class="mx-auto" width="60">
+                <div class="text-[6px] font-bold mt-1">${p.n.toUpperCase()}</div>
+            `;
+            card.onclick = () => toggleSelect(realIdx);
+            grid.appendChild(card);
+        });
+    }
+
+    function toggleSelect(i) {
+        const pos = selectedIdx.indexOf(i);
+        if(pos > -1) selectedIdx.splice(pos, 1);
+        else if(selectedIdx.length < 6) selectedIdx.push(i);
+        updateSelectionUI();
+    }
+
+    function updateSelectionUI() {
+        document.getElementById('sel-count').innerText = `Selezionati: ${selectedIdx.length}/6`;
+        const btn = document.getElementById('start-btn');
+        btn.disabled = selectedIdx.length === 0;
+        btn.classList.toggle('opacity-50', selectedIdx.length === 0);
+        btn.classList.toggle('bg-yellow-600', selectedIdx.length > 0);
+        renderGrid();
+    }
+
+    function showInfo(e, idx) {
+        e.stopPropagation();
+        const p = POKEMON_DB[idx];
+        const modal = document.getElementById('info-modal');
+        const moves = MOVE_TEMPLATES[p.t] || MOVE_TEMPLATES["Normal"];
+        document.getElementById('info-name').innerText = p.n.toUpperCase();
+        document.getElementById('info-hp').innerText = p.hp;
+        document.getElementById('info-img').src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id}.png`;
+        const typeEl = document.getElementById('info-type');
+        typeEl.innerText = p.t.toUpperCase();
+        typeEl.className = `text-[8px] mb-4 p-1 px-3 rounded inline-block text-white type-${p.t.toLowerCase()}`;
+        
+        const movesList = document.getElementById('info-moves');
+        movesList.innerHTML = moves.slice(0, 4).map(m => {
+            const maxPP = m.p >= 100 ? 5 : 20;
+            return `
+                <li class="border-b border-gray-100 pb-1">
+                    <span class="font-bold text-[7px]">${m.n.toUpperCase()}</span>
+                    <span class="text-blue-600 text-[6px] ml-1">${m.p ? 'DANNO: '+m.p : m.desc}</span>
+                    <span class="text-[6px] ml-2 ${maxPP === 5 ? 'text-red-500 font-bold' : 'text-gray-400'}">(PP: ${maxPP})</span>
+                </li>
+            `;
+        }).join('');
+        modal.style.display = 'flex';
+    }
+
+    function closeInfo() { document.getElementById('info-modal').style.display = 'none'; }
+
+    function showStats() {
+        if(isBusy) return;
+        const p = playerTeam[currentPIdx];
+        const modal = document.getElementById('stats-modal');
+        const content = document.getElementById('stats-content');
+        content.innerHTML = `
+            <div class="flex items-center gap-4 mb-4 border-b pb-2">
+                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id}.png" width="60">
+                <div>
+                    <h4 class="font-bold text-[10px]">${p.n.toUpperCase()}</h4>
+                    <p class="text-[7px]">Salute: ${Math.ceil(p.curHp)}/${p.hp} HP</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 gap-2">
+                <div class="flex justify-between items-center bg-gray-100 p-2 rounded">
+                    <span>ATTACCO</span>
+                    <span class="font-bold text-red-600">${p.stats.atk >= 0 ? '+' : ''}${p.stats.atk}</span>
+                </div>
+                <div class="flex justify-between items-center bg-gray-100 p-2 rounded">
+                    <span>DIFESA</span>
+                    <span class="font-bold text-green-600">${p.stats.def >= 0 ? '+' : ''}${p.stats.def}</span>
+                </div>
+            </div>
+        `;
+        modal.style.display = 'flex';
+    }
+
+    function closeStats() { document.getElementById('stats-modal').style.display = 'none'; }
+
+    function startBattle() {
+        playerTeam = selectedIdx.map(i => {
+            const p = JSON.parse(JSON.stringify(POKEMON_DB[i]));
+            p.curHp = p.hp;
+            p.stats = {atk:0, def:0};
+            // Logic: Powerful moves (p >= 100) get 5 PP, others 20
+            p.moves = (MOVE_TEMPLATES[p.t] || MOVE_TEMPLATES["Normal"]).map(m => {
+                const maxPP = m.p >= 100 ? 5 : 20;
+                return {...m, pp: maxPP, max: maxPP};
             });
+            return p;
+        });
+        enemyTeam = EMANUELA_TEAM.map(p => {
+            const ep = {...p, curHp: p.hp, maxHp: p.hp, stats:{atk:0, def:0}};
+            ep.moves = (MOVE_TEMPLATES[p.t] || MOVE_TEMPLATES["Normal"]).map(m => {
+                 const maxPP = m.p >= 100 ? 5 : 20;
+                 return {...m, pp: maxPP, max: maxPP};
+            });
+            return ep;
+        });
+        document.getElementById('selection-screen').style.display = 'none';
+        document.getElementById('arena').style.display = 'block';
+        document.getElementById('ui').style.display = 'grid';
+        loadBattleState();
+    }
+
+    function loadBattleState() {
+        const p = playerTeam[currentPIdx];
+        const e = enemyTeam[currentEnemyPIdx];
+        document.getElementById('p-name').innerText = p.n.toUpperCase();
+        document.getElementById('e-name').innerText = e.n.toUpperCase();
+        document.getElementById('p-img').src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${p.id}.png`;
+        document.getElementById('e-img').src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${e.id}.png`;
+        updateBars();
+        showMainMenu();
+    }
+
+    function updateBars() {
+        const p = playerTeam[currentPIdx];
+        const e = enemyTeam[currentEnemyPIdx];
+        const pPct = (p.curHp / p.hp) * 100;
+        const ePct = (e.curHp / e.maxHp) * 100;
+        document.getElementById('p-hp-bar').style.width = pPct + "%";
+        document.getElementById('e-hp-bar').style.width = ePct + "%";
+        document.getElementById('p-hp-text').innerText = `${Math.ceil(p.curHp)}/${p.hp} HP`;
+        const color = (pct) => pct < 20 ? '#ef4444' : pct < 50 ? '#f59e0b' : '#10b981';
+        document.getElementById('p-hp-bar').style.background = color(pPct);
+        document.getElementById('e-hp-bar').style.background = color(ePct);
+    }
+
+    function showMainMenu() {
+        document.getElementById('main-menu').classList.remove('hidden');
+        document.getElementById('moves-menu').classList.add('hidden');
+        msg(`Cosa farà ${playerTeam[currentPIdx].n.toUpperCase()}?`);
+    }
+
+    function showMoves() {
+        if(isBusy) return;
+        document.getElementById('main-menu').classList.add('hidden');
+        const menu = document.getElementById('moves-menu');
+        menu.classList.remove('hidden');
+        playerTeam[currentPIdx].moves.forEach((m, i) => {
+            const btn = document.getElementById(`m${i}`);
+            const damageInfo = m.p ? `DANNO: ${m.p}` : m.desc;
+            const isPowerMove = m.max === 5;
+            
+            btn.innerHTML = `
+                <span class="font-bold">${m.n.toUpperCase()}</span>
+                <span class="move-damage">${damageInfo}</span>
+                <span class="pp-info ${isPowerMove ? 'pp-low' : ''}">PP ${m.pp}/${m.max}</span>
+            `;
+            btn.className = `btn-action type-${playerTeam[currentPIdx].t.toLowerCase()} text-white`;
+            btn.disabled = m.pp <= 0;
+            btn.style.opacity = m.pp <= 0 ? 0.4 : 1;
+        });
+    }
+
+    async function handleMove(mIdx) {
+        if(isBusy) return;
+        isBusy = true;
+        const p = playerTeam[currentPIdx];
+        const m = p.moves[mIdx];
+        m.pp--;
+        
+        document.getElementById('moves-menu').classList.add('hidden');
+        const e = enemyTeam[currentEnemyPIdx];
+
+        await animate(p, e, m, true);
+        if(e.curHp <= 0) {
+            msg(`${e.n.toUpperCase()} è esausto!`);
+            currentEnemyPIdx++;
+            if(currentEnemyPIdx >= enemyTeam.length) {
+                msg("VITTORIA! HAI SCONFITTO EMANUELA AISA!");
+                return;
+            }
+            await new Promise(r => setTimeout(r, 1200));
+            loadBattleState();
+            isBusy = false;
+            return;
         }
 
-        function toggleSelection(index, element) {
-            const pos = selectedTeamIndices.indexOf(index);
-            if (pos === -1) {
-                if (selectedTeamIndices.length < 6) {
-                    selectedTeamIndices.push(index);
-                    element.classList.add('selected');
-                }
+        await new Promise(r => setTimeout(r, 800));
+
+        // Enemy Turn
+        const availableMoves = e.moves.filter(em => em.pp > 0);
+        const eMove = availableMoves.length > 0 ? availableMoves[Math.floor(Math.random()*availableMoves.length)] : {n:"Scontro", p:35};
+        if(eMove.pp) eMove.pp--;
+
+        await animate(e, p, eMove, false);
+        
+        if(p.curHp <= 0) {
+            msg(`${p.n.toUpperCase()} è esausto!`);
+            isBusy = false; 
+            forceSwitchMode = true;
+            setTimeout(() => openSwitch(false), 1000);
+        } else {
+            isBusy = false;
+            showMainMenu();
+        }
+    }
+
+    async function animate(at, df, mv, isPlayer) {
+        msg(`${at.n.toUpperCase()} usa ${mv.n.toUpperCase()}!`);
+        const img = document.getElementById(isPlayer ? 'p-img' : 'e-img');
+        img.style.transform = isPlayer ? 'translate(40px, -30px)' : 'translate(-40px, 30px)';
+        await new Promise(r => setTimeout(r, 200));
+        img.style.transform = '';
+
+        if(mv.p) {
+            const dmg = Math.floor(mv.p * ((10+at.stats.atk)/(10+df.stats.def)) * (Math.random()*0.2 + 0.9));
+            df.curHp = Math.max(0, df.curHp - dmg);
+            updateBars();
+            df.curHp === 0 ? null : await flash(isPlayer ? 'e-img' : 'p-img');
+        } else if(mv.s === 'hp') {
+            at.curHp = Math.min(at.hp, at.curHp + (at.hp * (mv.v/100)));
+            updateBars();
+        } else {
+            at.stats[mv.s] = Math.min(6, at.stats[mv.s] + mv.v);
+            msg(`Statistiche di ${at.n} aumentate!`);
+        }
+        await new Promise(r => setTimeout(r, 800));
+    }
+
+    async function flash(id) {
+        const el = document.getElementById(id);
+        for(let i=0; i<3; i++) {
+            el.style.opacity = '0';
+            await new Promise(r => setTimeout(r, 50));
+            el.style.opacity = '1';
+            await new Promise(r => setTimeout(r, 50));
+        }
+    }
+
+    function openSwitch(allowBack) {
+        if(isBusy && allowBack) return;
+        const overlay = document.getElementById('switch-overlay');
+        const list = document.getElementById('switch-list');
+        const backBtn = document.getElementById('back-btn');
+        overlay.style.display = 'flex';
+        backBtn.style.display = allowBack ? 'block' : 'none';
+        list.innerHTML = '';
+        playerTeam.forEach((p, i) => {
+            const item = document.createElement('div');
+            item.className = `switch-item ${p.curHp <= 0 ? 'ko' : ''}`;
+            const pct = (p.curHp / p.hp) * 100;
+            item.innerHTML = `
+                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id}.png" width="45">
+                <div class="flex-1">
+                    <div class="text-[8px] mb-1 font-bold">${p.n.toUpperCase()}</div>
+                    <div class="h-2 bg-gray-600 rounded overflow-hidden">
+                        <div class="h-full" style="width:${pct}%; background:${pct < 20 ? '#f00' : '#0f0'}"></div>
+                    </div>
+                </div>
+                <div class="text-[7px] ml-2">${Math.ceil(p.curHp)}/${p.hp}</div>
+            `;
+            if(p.curHp > 0 && i !== currentPIdx) item.onclick = () => performSwitch(i);
+            list.appendChild(item);
+        });
+    }
+
+    async function performSwitch(newIdx) {
+        document.getElementById('switch-overlay').style.display = 'none';
+        const oldName = playerTeam[currentPIdx].n;
+        currentPIdx = newIdx;
+        loadBattleState();
+        msg(`Rientra ${oldName}! Vai ${playerTeam[currentPIdx].n}!`);
+        
+        if(!forceSwitchMode) {
+            isBusy = true;
+            await new Promise(r => setTimeout(r, 1200));
+            const e = enemyTeam[currentEnemyPIdx];
+            const eMove = e.moves[Math.floor(Math.random()*e.moves.length)];
+            await animate(e, playerTeam[currentPIdx], eMove, false);
+            if(playerTeam[currentPIdx].curHp <= 0) {
+                forceSwitchMode = true;
+                openSwitch(false);
             } else {
-                selectedTeamIndices.splice(pos, 1);
-                element.classList.remove('selected');
+                isBusy = false;
+                showMainMenu();
             }
-            
-            document.querySelectorAll('.starter-card').forEach(card => card.querySelector('.selection-badge').innerText = "");
-            selectedTeamIndices.forEach((idIdx, order) => {
-                const card = document.getElementById('starter-grid').children[idIdx];
-                card.querySelector('.selection-badge').innerText = order + 1;
-                card.querySelector('.selection-badge').style.display = 'flex';
-            });
-
-            const count = selectedTeamIndices.length;
-            document.getElementById('selection-count').innerText = count;
-            const btn = document.getElementById('start-btn');
-            
-            if (count > 0) {
-                btn.disabled = false;
-                btn.classList.replace('bg-gray-500', 'bg-green-600');
-                btn.classList.replace('opacity-50', 'opacity-100');
-                btn.classList.remove('cursor-not-allowed');
-            } else {
-                btn.disabled = true;
-                btn.classList.replace('bg-green-600', 'bg-gray-500');
-                btn.classList.replace('opacity-100', 'opacity-50');
-                btn.classList.add('cursor-not-allowed');
-            }
+        } else {
+            forceSwitchMode = false;
+            isBusy = false;
+            showMainMenu();
         }
+    }
 
-        function startGame() {
-            playerSquad = selectedTeamIndices.map(idx => {
-                const base = POKEMON_DATA[idx];
-                return { ...base, currentHp: base.hp };
-            });
-            
-            document.getElementById('start-screen').style.display = 'none';
-            document.getElementById('arena').style.display = 'block';
-            document.getElementById('ui-tray').style.display = 'grid';
+    function closeSwitch() { document.getElementById('switch-overlay').style.display = 'none'; }
+    function msg(t) { document.getElementById('msg-text').innerText = t; }
 
-            setupActivePlayer();
-            const firstEnemy = enemyTeam[0];
-            enemyHP = firstEnemy.hp;
-            document.getElementById('enemy-sprite').src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${firstEnemy.id}.png`;
-            document.getElementById('enemy-name').innerText = firstEnemy.name;
-            
-            updateHealthBars();
-            showMessage(`L'allenatrice EMANUELA AISA ti sfida!`);
-        }
-
-        function setupActivePlayer() {
-            const pkmn = playerSquad[currentPlayerIndex];
-            document.getElementById('player-sprite').src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/${pkmn.id}.png`;
-            document.getElementById('player-sprite').style.opacity = '1';
-            document.getElementById('player-name-ui').innerText = pkmn.name.toUpperCase();
-            document.getElementById('player-card').style.opacity = '1';
-            
-            for(let i=0; i<4; i++) {
-                const btn = document.getElementById(`move-${i+1}`);
-                btn.innerText = pkmn.moves[i].n;
-            }
-        }
-
-        function showMessage(text) { document.getElementById('message-box').innerText = text; }
-        function setButtonsDisabled(disabled) { document.querySelectorAll('.action-btn').forEach(b => b.disabled = disabled); }
-
-        function updateHealthBars() {
-            const activePlayer = playerSquad[currentPlayerIndex];
-            const enemyMax = enemyTeam[currentEnemyIndex].hp;
-            
-            document.getElementById('enemy-hp-bar').style.width = (enemyHP / enemyMax * 100) + '%';
-            document.getElementById('player-hp-bar').style.width = (activePlayer.currentHp / activePlayer.hp * 100) + '%';
-            document.getElementById('player-hp-text').innerText = `${Math.ceil(activePlayer.currentHp)} / ${activePlayer.hp} HP`;
-            
-            // Colorazione barra HP in base allo stato
-            const bars = [
-                {fill: 'enemy-hp-bar', val: enemyHP, max: enemyMax},
-                {fill: 'player-hp-bar', val: activePlayer.currentHp, max: activePlayer.hp}
-            ];
-            
-            bars.forEach(b => {
-                const ratio = b.val / b.max;
-                const el = document.getElementById(b.fill);
-                if (ratio > 0.5) el.style.backgroundColor = '#4CAF50';
-                else if (ratio > 0.2) el.style.backgroundColor = '#FFC107';
-                else el.style.backgroundColor = '#F44336';
-            });
-        }
-
-        async function handlePlayerTurn(moveIdx) {
-            if (isTurnInProgress) return;
-            isTurnInProgress = true;
-            setButtonsDisabled(true);
-
-            const activePkmn = playerSquad[currentPlayerIndex];
-            const move = activePkmn.moves[moveIdx];
-            
-            // Calcolo danno con bonus leggendario
-            let finalDamage = move.d;
-            if (activePkmn.isLegendary) {
-                finalDamage = Math.floor(finalDamage * 1.5);
-                showMessage(`IL LEGGENDARIO ${activePkmn.name.toUpperCase()} sprigiona la sua aura!`);
-                await new Promise(r => setTimeout(r, 800));
-            }
-            
-            showMessage(`${activePkmn.name.toUpperCase()} usa ${move.n.toUpperCase()}!`);
-            
-            document.getElementById('player-sprite').style.transform = 'translate(60px, -60px)';
-            setTimeout(() => { document.getElementById('player-sprite').style.transform = 'translate(0, 0)'; }, 150);
-
-            setTimeout(() => {
-                const enemySprite = document.getElementById('enemy-sprite');
-                enemySprite.style.opacity = '0.3';
-                setTimeout(() => { if(enemyHP > 0) enemySprite.style.opacity = '1'; }, 100);
-                
-                enemyHP = Math.max(0, enemyHP - finalDamage);
-                updateHealthBars();
-
-                if (enemyHP <= 0) setTimeout(handleEnemyFaint, 800);
-                else {
-                    setTimeout(() => {
-                        showMessage("EMANUELA AISA sta pensando alla mossa da usare...");
-                        setTimeout(handleEnemyTurn, 1500);
-                    }, 1000);
-                }
-            }, 600);
-        }
-
-        function handleEnemyTurn() {
-            const currentEnemy = enemyTeam[currentEnemyIndex];
-            const moveName = currentEnemy.moves[Math.floor(Math.random() * currentEnemy.moves.length)];
-            
-            // Danni nemici: i leggendari di Aisa fanno più male
-            let baseDamage = 20 + Math.floor(Math.random() * 15);
-            if (currentEnemy.isLegendary) baseDamage = Math.floor(baseDamage * 1.5);
-            
-            showMessage(`${currentEnemy.name} nemico usa ${moveName}!`);
-
-            document.getElementById('enemy-sprite').style.transform = 'translate(-60px, 60px)';
-            setTimeout(() => { document.getElementById('enemy-sprite').style.transform = 'translate(0, 0)'; }, 150);
-
-            setTimeout(() => {
-                const playerSprite = document.getElementById('player-sprite');
-                playerSprite.style.opacity = '0.1';
-                setTimeout(() => { if(playerSquad[currentPlayerIndex].currentHp > 0) playerSprite.style.opacity = '1'; }, 100);
-
-                playerSquad[currentPlayerIndex].currentHp = Math.max(0, playerSquad[currentPlayerIndex].currentHp - baseDamage);
-                updateHealthBars();
-
-                if (playerSquad[currentPlayerIndex].currentHp <= 0) setTimeout(handlePlayerFaint, 800);
-                else {
-                    setTimeout(() => {
-                        showMessage(`Cosa deve fare ${playerSquad[currentPlayerIndex].name.toUpperCase()}?`);
-                        setButtonsDisabled(false);
-                        isTurnInProgress = false;
-                    }, 1200);
-                }
-            }, 600);
-        }
-
-        function handleEnemyFaint() {
-            showMessage(`${enemyTeam[currentEnemyIndex].name} nemico è esausto!`);
-            document.getElementById('enemy-sprite').style.transform = 'translateY(500px)';
-            document.getElementById('enemy-sprite').style.opacity = '0';
-            document.getElementById('enemy-card').style.opacity = '0';
-            
-            setTimeout(() => {
-                currentEnemyIndex++;
-                if (currentEnemyIndex >= enemyTeam.length) {
-                    document.getElementById('victory-screen').style.display = 'flex';
-                } else {
-                    const next = enemyTeam[currentEnemyIndex];
-                    enemyHP = next.hp;
-                    document.getElementById('enemy-sprite').src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${next.id}.png`;
-                    document.getElementById('enemy-name').innerText = next.name;
-                    document.getElementById('enemy-sprite').style.transform = 'translateY(0)';
-                    document.getElementById('enemy-sprite').style.opacity = '1';
-                    document.getElementById('enemy-card').style.opacity = '1';
-                    updateHealthBars();
-                    showMessage(`EMANUELA AISA manda in campo ${next.name}!`);
-                    setTimeout(() => {
-                        setButtonsDisabled(false);
-                        isTurnInProgress = false;
-                    }, 1200);
-                }
-            }, 1500);
-        }
-
-        function handlePlayerFaint() {
-            const faintedPkmn = playerSquad[currentPlayerIndex];
-            showMessage(`${faintedPkmn.name.toUpperCase()} è esausto!`);
-            document.getElementById('player-sprite').style.opacity = '0';
-            document.getElementById('player-card').style.opacity = '0';
-            
-            setTimeout(() => {
-                currentPlayerIndex++;
-                if (currentPlayerIndex >= playerSquad.length) {
-                    document.getElementById('defeat-screen').style.display = 'flex';
-                } else {
-                    const nextPkmn = playerSquad[currentPlayerIndex];
-                    showMessage(`Tocca a te, ${nextPkmn.name.toUpperCase()}!`);
-                    setupActivePlayer();
-                    updateHealthBars();
-                    setTimeout(() => {
-                        setButtonsDisabled(false);
-                        isTurnInProgress = false;
-                    }, 1200);
-                }
-            }, 1500);
-        }
-
-        window.onload = initGrid;
-    </script>
+    window.onload = init;
+</script>
 </body>
 </html>
