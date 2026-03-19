@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz dell'Orrore: Parini & Rivoluzione</title>
+    <!-- Importazione Font per Intro -->
+    <link href="https://fonts.googleapis.com/css2?family=Special+Elite&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #000000; /* Nero per fondersi col canvas */
+            --text-color: #dcdcdc;
+            --accent-red: #8a0000;
+            --accent-dark-red: #4a0000;
+            --card-bg: rgba(26, 26, 26, 0.85); /* Leggermente trasparente per vedere lo sfondo */
+            --success-green: #4caf50;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden; /* Prevent scrolling */
+        }
+
+        /* --- STILI INTRODUZIONE --- */
+        #intro-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100000; /* Sopra tutto */
+            font-family: 'Special Elite', system-ui, serif;
+            text-align: center;
+        }
+
+        #intro-text-container {
+            width: 85%;
+            max-width: 800px;
+            opacity: 0;
+            filter: blur(10px);
+            transition: opacity 3s ease-in-out, filter 4s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .intro-text {
+            font-size: 1.2rem;
+            line-height: 1.8;
+            letter-spacing: 0.05rem;
+            white-space: pre-line;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
+        }
+
+        .title-warning {
+            font-size: 2.5rem;
+            font-weight: normal;
+            display: block;
+            margin-bottom: 1.5rem;
+            letter-spacing: 0.4rem;
+            color: #b00000;
+            text-transform: uppercase;
+        }
+
+        .pulse {
+            animation: pulse-opacity 5s infinite ease-in-out;
+        }
+
+        @keyframes pulse-opacity {
+            0%, 100% { opacity: 1; filter: blur(0px); }
+            50% { opacity: 0.4; filter: blur(1px); }
+        }
+
+        /* --- STILI SFONDO HORROR --- */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            /* Contrast e Brightness calibrati per rendere visibile il rosso scuro */
+            filter: contrast(20) brightness(0.9); 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: -2; /* Dietro a tutto */
+        }
+
+        #liquidCanvas {
+            /* Sfocatura per permettere la fusione delle gocce */
+            filter: blur(12px); 
+        }
+
+        #vignette-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            /* Vignetta regolata per mostrare più pattern sui bordi */
+            background: radial-gradient(circle at center, transparent 20%, rgba(0,0,0,0.9) 100%);
+            z-index: -1; /* Sopra il canvas, sotto il quiz */
+        }
+
+        /* --- ELEMENTO FANTASMA --- */
+        #ghost-image {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            /* Dimensioni generose per sbucare dai lati del container */
+            width: 80vh; 
+            height: auto;
+            max-width: 90vw;
+            z-index: 5; /* Importante: Tra lo sfondo (-2) e il container (10) */
+            opacity: 0;
+            transition: opacity 2s ease-in-out, transform 2s ease-in-out;
+            pointer-events: none;
+            filter: grayscale(80%) contrast(1.2) brightness(0.7); /* Aspetto spettrale */
+            display: none; /* Nascosto di default */
+        }
+
+        /* --- STILI QUIZ --- */
+        .container {
+            background-color: var(--card-bg);
+            border: 2px solid var(--accent-dark-red);
+            box-shadow: 0 0 30px rgba(138, 0, 0, 0.5); /* Ombra più intensa */
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            border-radius: 8px;
+            text-align: center;
+            position: relative;
+            z-index: 10; /* Sopra lo sfondo */
+            backdrop-filter: blur(2px); /* Sfoca leggermente lo sfondo dietro il box */
+        }
+
+        h1 {
+            color: var(--accent-red);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 1.5rem;
+            text-shadow: 2px 2px 4px #000;
+            /* Animazione "Respiro Maligno" */
+            animation: spooky-pulse 4s ease-in-out infinite;
+        }
+
+        /* Definizione dell'animazione per il titolo */
+        @keyframes spooky-pulse {
+            0%, 100% { 
+                transform: scale(1); 
+                text-shadow: 2px 2px 4px #000;
+                color: var(--accent-red);
+            }
+            50% { 
+                transform: scale(1.05); /* Si ingrandisce leggermente */
+                text-shadow: 0 0 20px rgba(255, 0, 0, 0.6); /* Bagliore rosso */
+                color: #ff3333; /* Diventa più luminoso */
+            }
+        }
+        
+        .subtitle {
+            display: block;
+            font-size: 0.6em;
+            color: #888;
+            margin-top: 10px;
+            text-transform: none;
+            letter-spacing: 1px;
+            font-style: italic;
+            /* Animazione indipendente per il sottotitolo (leggero tremolio) */
+            animation: subtitle-float 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes subtitle-float {
+            from { transform: translateY(0); opacity: 0.7; }
+            to { transform: translateY(3px); opacity: 1; }
+        }
+
+        .question-text {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px #000;
+        }
+
+        .options-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        button {
+            background-color: rgba(42, 42, 42, 0.9);
+            color: #fff;
+            border: 1px solid var(--accent-dark-red);
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            font-size: 1rem;
+            text-align: left;
+        }
+
+        .center-btn {
+            text-align: center;
+            width: 100%;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .small-btn {
+            background-color: transparent;
+            border: 1px solid #444;
+            color: #666;
+            font-size: 0.8rem;
+            padding: 0.5rem 1rem;
+            margin-top: 2rem;
+            text-align: center;
+            width: auto;
+            display: inline-block;
+        }
+
+        .small-btn:hover {
+            background-color: #333;
+            color: #888;
+            border-color: #666;
+            transform: none;
+        }
+
+        button:hover {
+            background-color: var(--accent-red);
+            border-color: #ff0000;
+            transform: translateX(5px);
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.4);
+        }
+        
+        .center-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .small-btn:hover {
+             transform: scale(1.0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .progress-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1.5rem;
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+
+        /* Stile del Timer */
+        #timer {
+            font-size: 1.2rem;
+            color: #ff0000;
+            font-weight: bold;
+            text-shadow: 0 0 5px red;
+            background-color: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border: 1px solid var(--accent-dark-red);
+            border-radius: 4px;
+        }
+        
+        /* Bottone Storia in basso a sinistra */
+        #story-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: transparent;
+            border: 1px solid #444;
+            color: #888;
+            font-size: 1.5rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 20;
+            padding: 0;
+            transition: all 0.3s ease;
+        }
+        
+        #story-btn:hover {
+            color: var(--accent-red);
+            border-color: var(--accent-red);
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(138, 0, 0, 0.5);
+        }
+
+        .story-text-container {
+            text-align: justify;
+            max-height: 50vh;
+            overflow-y: auto;
+            padding: 0 10px;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            border-left: 1px solid var(--accent-dark-red);
+            border-right: 1px solid var(--accent-dark-red);
+            
+            /* Nascondi barra di scorrimento (Firefox) */
+            scrollbar-width: none; 
+            /* Nascondi barra di scorrimento (IE/Edge) */
+            -ms-overflow-style: none; 
+        }
+
+        /* Nascondi barra di scorrimento (Chrome/Safari/Opera) */
+        .story-text-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Jumpscare Overlay */
+        #jumpscare-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: black;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999; /* Leggermente sotto l'intro ma sopra il resto */
+            flex-direction: column;
+        }
+
+        #jumpscare-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both infinite;
+        }
+        
+        #game-over-text {
+            position: absolute;
+            bottom: 20%;
+            color: red;
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px red;
+            display: none;
+            text-align: center;
+            width: 90%;
+            line-height: 1.2;
+        }
+        
+        /* Reward Screen Image Style */
+        #reward-img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            border: 2px solid var(--success-green);
+            margin: 1.5rem 0;
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.3);
+        }
+        
+        .reward-text {
+            color: var(--success-green);
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-4px, 0, 0) scale(1.5); }
+            20%, 80% { transform: translate3d(6px, 0, 0) scale(1.5); }
+            30%, 50%, 70% { transform: translate3d(-8px, 0, 0) scale(1.5); }
+            40%, 60% { transform: translate3d(8px, 0, 0) scale(1.5); }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .victory {
+            color: var(--success-green);
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .restart-btn {
+            background-color: var(--accent-red);
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- INTRO SEQUENCE OVERLAY -->
+    <div id="intro-overlay">
+        <div id="intro-text-container" class="intro-text"></div>
+    </div>
+
+    <!-- Background Elements (Game) -->
+    <div id="vignette-overlay"></div>
+    <div id="canvas-container">
+        <canvas id="liquidCanvas"></canvas>
+    </div>
+    
+    <!-- Elemento Spettrale (Dietro al quiz, davanti allo sfondo) -->
+    <img id="ghost-image" src="" alt="">
+
+    <!-- Bottone Storia (Visibile solo nella schermata iniziale) -->
+    <button id="story-btn" onclick="openStory()" title="Leggi la Storia">📜</button>
+
+    <!-- Start Screen -->
+    <div class="container" id="start-screen">
+        <h1>Non aprite il quadernone <span class="subtitle">è ora di fare una bella interrogazione</span></h1>
+        <div style="margin-top: 3rem;">
+            <button class="center-btn" onclick="startQuiz()">Pronto per il patibolo</button>
+            <br>
+            <button class="small-btn" onclick="showScolding()">Mi va bene 4</button>
+        </div>
+    </div>
+
+    <!-- Story Screen (Nuova Schermata) -->
+    <div class="container hidden" id="story-screen">
+        <h1>Storia</h1>
+        <div class="story-text-container">
+            <p>
+                Il corridoio per arrivare in classe sembrava più lungo del solito quella mattina. Tutti nella 4C camminavano più lentamente, sperando di non dover mai entrare nella loro aula, quella dove sapevano chi li stava attendendo: la prof.ssa Aisa, che quel giorno doveva interrogare.
+            </p>
+            <p>
+                Quell’aula aveva una strana pressione, la pressione dell’aura che la prof.ssa Aisa aveva costruito in tutti i suoi anni di insegnamento.
+                Ora sei qui, davanti a lei, pronta a interrogarti.
+            </p>
+            <p>
+                Le leggende narrano che chiunque sbagli una domanda, il giorno dopo sparisca, che non si riveda mai più, schiacciato dall’ira della prof.ssa Aisa.
+            </p>
+            <p style="color: var(--accent-red); font-weight: bold; text-align: center; margin-top: 20px; font-size: 1.1em;">
+                Mi raccomando.<br>
+                NON. SBAGLIARE.
+            </p>
+        </div>
+        <button class="center-btn" onclick="closeStory()">Torna Indietro</button>
+    </div>
+
+    <!-- Scolding Screen -->
+    <div class="container hidden" id="scolding-screen">
+        <h1>Ma questo ti sembra un comportamento corretto?</h1>
+        <div class="options-grid" style="margin-top: 2rem;">
+            <button onclick="acceptInterrogation()">No, ho capito e vengo interrogato</button>
+            <button onclick="triggerInsultJumpscare()">È irrilevante, tanto 4 si recupera</button>
+        </div>
+    </div>
+
+    <!-- Quiz Container (Initially Hidden) -->
+    <div class="container hidden" id="quiz-container">
+        <h1>Il Giudizio Finale</h1>
+        <div id="quiz-content">
+            <p class="question-text" id="question">Caricamento...</p>
+            <div class="options-grid" id="options">
+                <!-- Options injected by JS -->
+            </div>
+            
+            <div class="progress-container">
+                <div id="progress">Domanda 1 di ?</div>
+                <div id="timer">01:30</div>
+            </div>
+        </div>
+        
+        <!-- Victory Screen: First Phase -->
+        <div id="result-content" class="hidden">
+            <div class="victory">SOPRAVVISSUTO</div>
+            <p>Hai dimostrato una conoscenza impeccabile.</p>
+            <p>Robespierre e Parini ti concedono la grazia... per ora.</p>
+            <button class="restart-btn center-btn" onclick="showRewardScreen()">Scopri la tua sorte</button>
+        </div>
+        
+        <!-- Victory Screen: Final Reward Phase -->
+        <div id="reward-screen" class="hidden">
+            <img id="reward-img" src="https://mail.google.com/mail/u/0?ui=2&amp;ik=bd76df1298&amp;attid=0.1&amp;permmsgid=msg-f:1856013575400806369&amp;th=19c1e283641157e1&amp;view=fimg&amp;fur=ip&amp;permmsgid=msg-f:1856013575400806369&amp;sz=s0-l75-ft&amp;attbid=ANGjdJ-n3hnLFkF9vyE1MxBLp4FY62cY3ueqbk_-NdLc2gPhFjyRT6QsQi2wVIxDkA4IDWOvDE5AtE32ksmFd_BDBka7kxdkYxA4sXsLbKfePBETBZYHJzTEcdKccKs&amp;disp=emb&amp;realattid=ii_19c1e27fb47a4441a51&amp;zw" alt="Immagine di approvazione">
+            <div class="reward-text">Bravo, si vede che hai studiato, ti metto 8</div>
+            <button class="restart-btn center-btn" onclick="reloadGame()">Ricomincia da capo</button>
+        </div>
+
+        <!-- NEW: Game Over Content -->
+        <div id="game-over-content" class="hidden">
+            <!-- Modifica Testo 1: Titolo cambiato -->
+            <h2 style="color: var(--accent-red); font-size: 2rem; margin-bottom: 1rem;">Hai risposto incorrettamente</h2>
+            <p id="final-failure-msg" style="margin-bottom: 2rem; font-size: 1.2rem; color: #ff6666;"></p>
+            <button class="restart-btn center-btn" onclick="reloadGame()">Torna a studiare</button>
+        </div>
+    </div>
+
+    <!-- Jumpscare Element -->
+    <div id="jumpscare-overlay">
+        <img id="jumpscare-img" src="" alt="SCREAM">
+        <div id="game-over-text">HAI SBAGLIATO</div>
+    </div>
+
+    <script>
+        // --- LOGICA INTRO ---
+        const introContainer = document.getElementById('intro-text-container');
+        const introOverlay = document.getElementById('intro-overlay');
+
+        // Definizione delle fasi dell'intro
+        const introSequences = [
+            {
+                text: "Un gioco basato sulla vita reale",
+                displayTime: 7000,
+                stayPermanent: false
+            },
+            {
+                text: `<span class='title-warning'>Avvertenze</span>
+Questo gioco contiene suoni horror intensi, suspence psicologica e jumpscares. Potrebbero essere presenti:
+- Violenza (da parte della prof.ssa ...)
+- Sangue moderato
+- Temi emotivamente disturbanti (interrogazioni)
+Non consigliato a giocatori sensibili o deboli di cuore.`,
+                displayTime: 16000, 
+                stayPermanent: false
+            },
+            {
+                text: "Per coloro che hanno deciso di continuare,\nbuona fortuna",
+                displayTime: 5000,
+                stayPermanent: false
+            },
+            {
+                text: "<span class='pulse'>[premi SPACE per iniziare a studiare]</span>",
+                displayTime: 0,
+                stayPermanent: true 
+            }
+        ];
+
+        let introStep = 0;
+        let canStartGame = false;
+        
+        // Variabile per gestire il salto del timer
+        let skipResolve = null;
+
+        function interruptibleSleep(ms) {
+            return new Promise(resolve => {
+                const timer = setTimeout(() => {
+                    skipResolve = null;
+                    resolve(false); // Finito naturalmente
+                }, ms);
+                
+                // Assegna la funzione di sblocco
+                skipResolve = () => {
+                    clearTimeout(timer);
+                    resolve(true); // Saltato dall'utente
+                };
+            });
+        }
+
+        async function runIntro() {
+            if (introStep >= introSequences.length) return;
+
+            const current = introSequences[introStep];
+
+            // 1. SETUP INIZIALE (Nascosto)
+            // Rimuoviamo transizioni per reset immediato se necessario
+            introContainer.style.transition = 'none';
+            introContainer.style.opacity = 0;
+            introContainer.style.filter = "blur(10px)";
+            
+            // Breve pausa tecnica per assicurare il rendering
+            await interruptibleSleep(100);
+            
+            // Imposta testo
+            introContainer.innerHTML = current.text;
+
+            // 2. FADE IN
+            // Ripristina transizioni lente
+            introContainer.style.transition = "opacity 3s ease-in-out, filter 4s ease-in-out";
+            // Force reflow
+            void introContainer.offsetWidth; 
+            
+            introContainer.style.opacity = 1;
+            introContainer.style.filter = "blur(0px)";
+
+            if (current.stayPermanent) {
+                canStartGame = true;
+                return; 
+            }
+
+            // 3. ATTESA LETTURA (Saltabile)
+            const skipped = await interruptibleSleep(current.displayTime);
+
+            // 4. FADE OUT
+            if (skipped) {
+                // Se saltato, fade out veloce
+                introContainer.style.transition = "opacity 0.5s ease-out";
+                introContainer.style.opacity = 0;
+                introContainer.style.filter = "blur(5px)";
+                await interruptibleSleep(600); // Pausa breve
+            } else {
+                // Fade out lento normale
+                introContainer.style.opacity = 0;
+                introContainer.style.filter = "blur(10px)";
+                await interruptibleSleep(3500); 
+            }
+
+            // Prossimo step
+            introStep++;
+            runIntro();
+        }
+
+        // Gestione pressione tasto SPACE per l'intro e SKIP
+        window.addEventListener('keydown', (event) => {
+            if (event.code === 'Space') {
+                
+                if (canStartGame) {
+                    // AVVIO GIOCO (Sequenza Flash)
+                    canStartGame = false; 
+                    playClickSound(); 
+
+                    introOverlay.style.transition = "none"; 
+                    introOverlay.style.backgroundColor = "#FFFFFF"; 
+                    introContainer.style.display = "none"; 
+
+                    setTimeout(() => {
+                        introOverlay.style.backgroundColor = "#000000"; 
+                        setTimeout(() => {
+                            introOverlay.style.transition = "opacity 2s ease-in-out"; 
+                            introOverlay.style.opacity = 0; 
+                            setTimeout(() => {
+                                introOverlay.style.display = "none"; 
+                            }, 2000); 
+                        }, 100);
+                    }, 50);
+                } else {
+                    // SKIP TESTO CORRENTE
+                    // Se c'è un timer attivo (skipResolve non è null), saltalo
+                    if (skipResolve) {
+                        playClickSound(); // Feedback
+                        skipResolve(); // Risolve la promise interruptibleSleep con true
+                        skipResolve = null;
+                    }
+                }
+            }
+        });
+
+        // --- CODICE AUDIO ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playClickSound() {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.type = 'triangle';
+            oscillator.frequency.setValueAtTime(300, audioCtx.currentTime); 
+            oscillator.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.1);
+
+            gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.1);
+        }
+
+        // --- NUOVA FUNZIONE: Rumore di fondo per Jumpscare ---
+        function playJumpscareNoise(durationInSeconds) {
+             if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            
+            const t = audioCtx.currentTime;
+            
+            // 1. Drone Basso (Rumble) - Onda Sawtooth
+            const osc1 = audioCtx.createOscillator();
+            osc1.type = 'sawtooth';
+            osc1.frequency.setValueAtTime(50, t);
+            osc1.frequency.linearRampToValueAtTime(30, t + durationInSeconds); // Scende di tono
+
+            // 2. Drone Dissonante - Onda Quadra
+            const osc2 = audioCtx.createOscillator();
+            osc2.type = 'square';
+            osc2.frequency.setValueAtTime(55, t); // Leggero detune per creare battimenti sgradevoli
+            osc2.frequency.linearRampToValueAtTime(35, t + durationInSeconds);
+
+            // 3. Rumore Acuto (Screech)
+            const osc3 = audioCtx.createOscillator();
+            osc3.type = 'sawtooth';
+            osc3.frequency.setValueAtTime(600, t);
+            osc3.frequency.exponentialRampToValueAtTime(100, t + durationInSeconds); // Caduta in picchiata
+
+            // Volumi
+            const gain1 = audioCtx.createGain();
+            gain1.gain.setValueAtTime(0.4, t);
+            gain1.gain.linearRampToValueAtTime(0, t + durationInSeconds);
+
+            const gain2 = audioCtx.createGain();
+            gain2.gain.setValueAtTime(0.3, t);
+            gain2.gain.linearRampToValueAtTime(0, t + durationInSeconds);
+            
+            const gain3 = audioCtx.createGain();
+            gain3.gain.setValueAtTime(0.1, t); // Più basso
+            gain3.gain.linearRampToValueAtTime(0, t + durationInSeconds);
+
+            // Collegamenti
+            osc1.connect(gain1);
+            osc2.connect(gain2);
+            osc3.connect(gain3);
+            
+            gain1.connect(audioCtx.destination);
+            gain2.connect(audioCtx.destination);
+            gain3.connect(audioCtx.destination);
+
+            // Start e Stop
+            osc1.start(t);
+            osc2.start(t);
+            osc3.start(t);
+
+            osc1.stop(t + durationInSeconds);
+            osc2.stop(t + durationInSeconds);
+            osc3.stop(t + durationInSeconds);
+        }
+
+        // Funzione per ricaricare con il suono (SOFT RESET)
+        function reloadGame() {
+            playClickSound();
+            
+            // Brevissimo delay per sentire il suono del click, poi resetta il DOM invece di ricaricare la pagina
+            setTimeout(() => {
+                // 1. Nascondi tutte le schermate di gioco/finale
+                document.getElementById('reward-screen').classList.add('hidden');
+                document.getElementById('game-over-content').classList.add('hidden');
+                document.getElementById('quiz-container').classList.add('hidden');
+                document.getElementById('scolding-screen').classList.add('hidden');
+                document.getElementById('result-content').classList.add('hidden');
+                
+                // 2. Assicurati che l'overlay del jumpscare sia nascosto
+                document.getElementById('jumpscare-overlay').style.display = 'none';
+                
+                // 3. Mostra la schermata iniziale
+                document.getElementById('start-screen').classList.remove('hidden');
+                document.getElementById('story-btn').classList.remove('hidden');
+                
+                // 4. Resetta le variabili di stato essenziali
+                clearInterval(timerInterval);
+                timeLeft = 90;
+                document.getElementById('timer').textContent = "01:30";
+                currentQuestionIndex = 0;
+                stopGhostLoop(); // Resetta i fantasmi
+                
+                // Riattiva quizContent se era stato nascosto dal game over
+                document.getElementById('quiz-content').classList.remove('hidden');
+                
+            }, 300);
+        }
+
+        // --- CODICE SFONDO HORROR ---
+        const bgCanvas = document.getElementById('liquidCanvas');
+        const bgCtx = bgCanvas.getContext('2d', { alpha: false });
+
+        let bgWidth, bgHeight;
+        let drops = [];
+        let time = 0;
+
+        function initBackground() {
+            resizeBackground();
+            animateBackground();
+        }
+
+        function resizeBackground() {
+            // Risoluzione interna per il calcolo dei filtri
+            bgWidth = bgCanvas.width = window.innerWidth / 2;
+            bgHeight = bgCanvas.height = window.innerHeight / 2;
+            bgCanvas.style.width = window.innerWidth + 'px';
+            bgCanvas.style.height = window.innerHeight + 'px';
+            createPattern();
+        }
+
+        window.addEventListener('resize', resizeBackground);
+
+        class BloodDrop {
+            constructor(x, y, baseSize) {
+                this.x = x;
+                this.y = y;
+                this.originX = x;
+                this.originY = y;
+                this.baseSize = baseSize;
+                this.offset = Math.random() * Math.PI * 2;
+                // Movimento estremamente lento
+                this.speed = 0.004 + Math.random() * 0.006; 
+                this.drift = 10 + Math.random() * 15;
+            }
+
+            update(t) {
+                // Fluttuazione fluida
+                this.x = this.originX + Math.sin(t * 0.01 + this.offset) * this.drift;
+                this.y = this.originY + Math.cos(t * 0.012 + this.offset) * this.drift;
+
+                // Pulsazione lenta
+                const pulse = Math.sin(t * this.speed + this.offset) * 0.5 + 0.5;
+                this.currentSize = this.baseSize * (0.8 + pulse * 0.6);
+            }
+
+            draw() {
+                // Rosso più chiaro qui, il filtro 'contrast' lo renderà sangue scuro e denso
+                bgCtx.fillStyle = '#800'; 
+                bgCtx.beginPath();
+                bgCtx.arc(this.x, this.y, this.currentSize, 0, Math.PI * 2);
+                bgCtx.fill();
+            }
+        }
+
+        function createPattern() {
+            drops = [];
+            const density = 35; 
+            
+            for (let x = -50; x < bgWidth + 50; x += density) {
+                for (let y = -50; y < bgHeight + 50; y += density) {
+                    
+                    // Pattern curvo ispirato alla foto
+                    const waveX = Math.sin(y * 0.015) * 50;
+                    const waveY = Math.cos(x * 0.015) * 50;
+                    
+                    const posX = x + waveX;
+                    const posY = y + waveY;
+
+                    const centerX = bgWidth / 2;
+                    const centerY = bgHeight / 2;
+                    const dist = Math.sqrt((posX - centerX) ** 2 + (posY - centerY) ** 2);
+                    const maxDist = Math.sqrt(centerX**2 + centerY**2);
+                    
+                    // Più liquido ai bordi, ma visibile anche verso il centro
+                    let sizeFactor = Math.pow(dist / maxDist, 1.1) * 22;
+                    
+                    // Variazione irregolare
+                    const noise = Math.sin(posX * 0.03) * Math.cos(posY * 0.03);
+                    sizeFactor += noise * 6;
+
+                    if (sizeFactor > 4) {
+                        drops.push(new BloodDrop(posX, posY, sizeFactor));
+                    }
+                }
+            }
+        }
+
+        function animateBackground() {
+            // Sfondo nero solido
+            bgCtx.fillStyle = '#000';
+            bgCtx.fillRect(0, 0, bgWidth, bgHeight);
+
+            time += 0.4; // Movimento molto lento
+
+            drops.forEach(drop => {
+                drop.update(time);
+                drop.draw();
+            });
+
+            requestAnimationFrame(animateBackground);
+        }
+
+        // --- CODICE QUIZ ---
+
+        // Configurazione Jumpscare
+        const JUMPSCARE_IMAGE_URL = "https://lh3.googleusercontent.com/a-/ALV-UjX5WaAKPyFOdPE72EV2dbV2IvSo1Xbdv12mYFqvBUM9gWaaMoRU=s75-c";
+        const JUMPSCARE_IMAGE_URL_HD = JUMPSCARE_IMAGE_URL.replace("s75-c", "s800-c");
+        const REWARD_IMAGE_URL = "https://mail.google.com/mail/u/0?ui=2&ik=bd76df1298&attid=0.1&permmsgid=msg-f:1856013575400806369&th=19c1e283641157e1&view=fimg&fur=ip&permmsgid=msg-f:1856013575400806369&sz=s0-l75-ft&attbid=ANGjdJ-n3hnLFkF9vyE1MxBLp4FY62cY3ueqbk_-NdLc2gPhFjyRT6QsQi2wVIxDkA4IDWOvDE5AtE32ksmFd_BDBka7kxdkYxA4sXsLbKfePBETBZYHJzTEcdKccKs&disp=emb&realattid=ii_19c1e27fb47a4441a51&amp;zw";
+
+        const allQuestions = [
+            { question: "Quale figura retorica è centrale nella satira del 'Giorno' per descrivere la vita del Giovin Signore?", options: ["L'antifrasi (ironia)", "L'iperbole", "La litote", "La sinestesia"], correct: 0 },
+            { question: "Quale evento del 1789 costrinse Luigi XVI a trasferirsi da Versailles a Parigi?", options: ["La marcia delle donne su Versailles", "La presa della Bastiglia", "La fuga di Varennes", "La dichiarazione di guerra all'Austria"], correct: 0 },
+            { question: "In quale parte del 'Giorno' Parini inserisce la celebre 'Favola del Piacere'?", options: ["Nel Mezzogiorno", "Nel Mattino", "Nella Notte", "Nel Vespro"], correct: 0 },
+            { question: "Quale fazione politica sedeva alla sinistra del presidente nell'Assemblea Legislativa?", options: ["I Giacobini e i Cordiglieri", "I Foglianti", "I Girondini (inizialmente)", "I Monarchici"], correct: 0 },
+            { question: "Qual è il tema principale dell'Ode 'La caduta' di Parini?", options: ["La dignità del poeta e il rifiuto del servilismo", "La vecchiaia e la malattia fisica", "La critica all'urbanistica di Milano", "La denuncia della tortura giudiziaria"], correct: 0 },
+            { question: "Chi era soprannominato 'L'Incorruttibile'?", options: ["Maximilien de Robespierre", "Georges Danton", "Jean-Paul Marat", "Louis Antoine de Saint-Just"], correct: 0 },
+            { question: "Quale concetto illuminista è centrale nell'opera di Beccaria e influenzò Parini?", options: ["L'utilitarismo sociale", "Il diritto divino dei re", "Il materialismo storico", "Il ritorno allo stato di natura"], correct: 0 },
+            { question: "Cosa stabiliva la Costituzione Civile del Clero del 1790?", options: ["Trasformava i sacerdoti in funzionari statali stipendiati", "Aboliva totalmente la religione cattolica", "Restituiva le terre confiscate alla Chiesa", "Dichiarava il Papa capo supremo dello Stato"], correct: 0 },
+            { question: "Quale ordine religioso si occupò della prima educazione di Parini?", options: ["I Barnabiti", "I Gesuiti", "I Francescani", "I Domenicani"], correct: 0 },
+            { question: "Quale fu la conseguenza immediata del 9 Termidoro?", options: ["La caduta di Robespierre e la fine del Terrore", "L'inizio del Direttorio", "L'esecuzione di Luigi XVI", "L'incoronazione di Napoleone"], correct: 0 },
+            { question: "Chi assassinò Jean-Paul Marat nella sua vasca da bagno?", options: ["Charlotte Corday", "Maria Antonietta", "Olympe de Gouges", "Madame Roland"], correct: 0 },
+            { question: "Nell'episodio della 'Vergine Cuccia' del Giorno, cosa succede alla cagnolina?", options: ["Viene presa a calci dal servo che ha morso", "Viene nutrita con cibi prelibati", "Scappa via terrorizzata", "Viene adorata come una dea"], correct: 0 },
+            { question: "Chi erano i 'Sanculotti'?", options: ["I popolani rivoluzionari di Parigi che portavano pantaloni lunghi", "I nobili decaduti", "I soldati dell'esercito prussiano", "I membri del clero refrattario"], correct: 0 },
+            { question: "Che cos'era il 'Comitato di Salute Pubblica'?", options: ["L'organo esecutivo che governò durante il Terrore", "Un ospedale per i poveri", "Un'associazione di medici parigini", "Il tribunale per i reati minori"], correct: 0 },
+            { question: "Quale Ode di Parini critica l'inquinamento causato dalle risaie intorno a Milano?", options: ["La salubrità dell'aria", "Il bisogno", "La vita rustica", "L'educazione"], correct: 0 },
+            { question: "In quale città italiana Giuseppe Parini visse e operò principalmente?", options: ["Milano", "Firenze", "Venezia", "Roma"], correct: 0 },
+            { question: "Quale battaglia del 1792 segnò la prima vittoria dell'esercito rivoluzionario contro i Prussiani?", options: ["Valmy", "Waterloo", "Austerlitz", "Marengo"], correct: 0 },
+            { question: "Chi è il narratore che guida il lettore nell'opera 'Il Giorno'?", options: ["Il Precettore", "Il Giovin Signore", "Un servo anziano", "La Dama"], correct: 0 },
+            { question: "Cosa simboleggiava la 'coccarda tricolore'?", options: ["L'alleanza tra il Re (bianco) e il popolo di Parigi (blu e rosso)", "I tre stati sociali", "Libertà, Uguaglianza, Fraternità", "Il sangue versato dai martiri"], correct: 0 },
+            { question: "Come morì Giuseppe Parini?", options: ["Di morte naturale a Milano", "Ghigliottinato", "In esilio", "In battaglia"], correct: 0 },
+            { question: "Quale famosa frase è falsamente attribuita a Maria Antonietta?", options: ["Se non hanno pane, che mangino brioche", "Lo Stato sono io", "Dopo di me il diluvio", "La legge è uguale per tutti"], correct: 0 },
+            { question: "Chi scrisse la 'Dichiarazione dei diritti della donna e della cittadina'?", options: ["Olympe de Gouges", "Mary Wollstonecraft", "Madame de Staël", "Charlotte Corday"], correct: 0 }
+        ];
+
+        let currentSessionQuestions = [];
+        let currentQuestionIndex = 0;
+        let timerInterval;
+        let timeLeft = 90; // 1 minuto e 30 secondi
+        
+        // Variabili per l'effetto fantasma
+        let ghostTimeout;
+        const ghostImage = document.getElementById('ghost-image');
+        
+        const questionEl = document.getElementById('question');
+        const optionsEl = document.getElementById('options');
+        const progressEl = document.getElementById('progress');
+        const quizContent = document.getElementById('quiz-content');
+        const resultContent = document.getElementById('result-content');
+        const rewardScreen = document.getElementById('reward-screen'); 
+        const jumpscareOverlay = document.getElementById('jumpscare-overlay');
+        const jumpscareImg = document.getElementById('jumpscare-img');
+        const gameOverText = document.getElementById('game-over-text');
+        const startScreen = document.getElementById('start-screen');
+        const quizContainer = document.getElementById('quiz-container');
+        const scoldingScreen = document.getElementById('scolding-screen');
+        const storyScreen = document.getElementById('story-screen');
+        const storyBtn = document.getElementById('story-btn');
+        const timerEl = document.getElementById('timer');
+        const gameOverContent = document.getElementById('game-over-content');
+        const finalFailureMsg = document.getElementById('final-failure-msg');
+
+        const imgPreload = new Image();
+        imgPreload.src = JUMPSCARE_IMAGE_URL_HD;
+        // Precarica immagine anche per il fantasma
+        ghostImage.src = JUMPSCARE_IMAGE_URL_HD;
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function prepareQuestion(questionObj) {
+            let optionsWithTruth = questionObj.options.map((opt, idx) => ({
+                text: opt,
+                isCorrect: idx === questionObj.correct
+            }));
+            
+            shuffleArray(optionsWithTruth);
+            
+            let newCorrectIndex = optionsWithTruth.findIndex(opt => opt.isCorrect);
+            
+            return {
+                question: questionObj.question,
+                options: optionsWithTruth.map(o => o.text),
+                correct: newCorrectIndex
+            };
+        }
+
+        function showScolding() {
+            playClickSound();
+            startScreen.classList.add('hidden');
+            storyBtn.classList.add('hidden'); // Nascondi bottone storia
+            scoldingScreen.classList.remove('hidden');
+        }
+        
+        // Funzioni per la Storia
+        function openStory() {
+            playClickSound();
+            startScreen.classList.add('hidden');
+            storyBtn.classList.add('hidden');
+            storyScreen.classList.remove('hidden');
+        }
+        
+        function closeStory() {
+            playClickSound();
+            storyScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+            storyBtn.classList.remove('hidden');
+        }
+
+        function acceptInterrogation() {
+            playClickSound();
+            scoldingScreen.classList.add('hidden');
+            startQuizLogic();
+        }
+
+        function triggerInsultJumpscare() {
+            playClickSound();
+            gameOverText.innerText = "MA TI SEMBRA UN COMPORTAMENTO RISPETTOSO? TI METTO 2";
+            triggerJumpscare(6000);
+        }
+
+        function startQuiz() {
+            playClickSound();
+            triggerIntroSequence();
+        }
+
+        function triggerIntroSequence() {
+            startScreen.classList.add('hidden');
+            storyBtn.classList.add('hidden');
+
+            const overlay = document.getElementById('jumpscare-overlay');
+            const img = document.getElementById('jumpscare-img');
+            const text = document.getElementById('game-over-text');
+            
+            // 1. Mostra immagine "Felice" (Falsa sicurezza)
+            text.style.display = 'none'; 
+            img.style.animation = 'none'; // Nessun tremore
+            img.src = REWARD_IMAGE_URL; 
+            overlay.style.display = 'flex';
+
+            // 2. Aspetta 2.5 secondi (aumentato leggermente per enfatizzare la calma)
+            setTimeout(() => {
+                img.src = JUMPSCARE_IMAGE_URL_HD;
+                img.style.animation = 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both infinite'; // Ripristina tremore
+                
+                // Rumore brevissimo
+                playJumpscareNoise(0.15); 
+                
+                // 3. Flash brevissimo (150ms invece di 800ms)
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                    startQuizLogic();
+                }, 150); 
+            }, 2500); 
+        }
+
+        function updateTimer() {
+            timeLeft--;
+            
+            // Formatta il tempo in MM:SS
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            const formattedTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            timerEl.textContent = formattedTime;
+
+            if (timeLeft <= 0) {
+                stopGhostLoop(); // Ferma le apparizioni
+                clearInterval(timerInterval);
+                gameOverText.innerText = "SE AVESSI STUDIATO AVRESTI SAPUTO TUTTO ALLA PERFEZIONE";
+                // Testo più lungo, diamo tempo di leggerlo
+                triggerJumpscare(5000); 
+            }
+        }
+
+        // --- LOGICA EFFETTO FANTASMA ---
+        function startGhostLoop() {
+            // Pianifica la prossima apparizione più frequente: tra 3 e 7 secondi
+            const randomDelay = Math.random() * 4000 + 3000;
+            ghostTimeout = setTimeout(showGhost, randomDelay);
+        }
+
+        function showGhost() {
+            // Mostra l'immagine solo se il quiz è attivo
+            if (quizContainer.classList.contains('hidden')) return;
+
+            ghostImage.style.display = 'block';
+            
+            // Posizione casuale ma centrale con variazione
+            // top e left tra 30% e 70% per garantire che "esca" dal rettangolo centrale
+            const randTop = 30 + Math.random() * 40; 
+            const randLeft = 30 + Math.random() * 40;
+            
+            ghostImage.style.top = randTop + '%';
+            ghostImage.style.left = randLeft + '%';
+            
+            // Appare lentamente
+            // Timeout brevissimo per permettere al browser di registrare il display:block prima dell'opacity
+            setTimeout(() => {
+                // Aumento opacità per renderla visibile (era 0.15)
+                ghostImage.style.opacity = '0.5'; 
+            }, 50);
+
+            // Rimane visibile per più tempo (2-4 secondi)
+            const duration = Math.random() * 2000 + 2000;
+            
+            setTimeout(() => {
+                ghostImage.style.opacity = '0';
+                
+                // Dopo che è svanita, nascondila e pianifica la prossima
+                setTimeout(() => {
+                    ghostImage.style.display = 'none';
+                    startGhostLoop();
+                }, 2000); // Attendi la fine della transizione CSS (2s)
+            }, duration);
+        }
+
+        function stopGhostLoop() {
+            clearTimeout(ghostTimeout);
+            ghostImage.style.opacity = '0';
+            ghostImage.style.display = 'none';
+        }
+
+        function startQuizLogic() {
+            // FIX: Assicurati che il container sia visibile e gli elementi interni resettati
+            quizContainer.classList.remove('hidden');
+            quizContent.classList.remove('hidden');
+            resultContent.classList.add('hidden');
+            rewardScreen.classList.add('hidden');
+            gameOverContent.classList.add('hidden'); // Nasconde schermata sconfitta precedente
+
+            let pool = [...allQuestions];
+            shuffleArray(pool);
+            currentSessionQuestions = pool.slice(0, 10);
+            currentQuestionIndex = 0;
+            
+            // Reset e avvio Timer
+            timeLeft = 90; // 1 minuto e 30 secondi
+            timerEl.textContent = "01:30";
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
+            
+            // Avvia effetto fantasma subito dopo 1 secondo per garantire che si veda
+            setTimeout(showGhost, 1000); 
+            
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const rawQuestion = currentSessionQuestions[currentQuestionIndex];
+            const currentQuestion = prepareQuestion(rawQuestion);
+
+            questionEl.textContent = currentQuestion.question;
+            progressEl.textContent = `Domanda ${currentQuestionIndex + 1} di ${currentSessionQuestions.length}`;
+            
+            optionsEl.innerHTML = '';
+            
+            currentQuestion.options.forEach((option, index) => {
+                const btn = document.createElement('button');
+                btn.textContent = option;
+                // Aggiunto il suono anche qui
+                btn.onclick = () => { playClickSound(); checkAnswer(index, currentQuestion.correct); };
+                optionsEl.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selectedIndex, correctIndex) {
+            if (selectedIndex === correctIndex) {
+                currentQuestionIndex++;
+                if (currentQuestionIndex < currentSessionQuestions.length) {
+                    loadQuestion();
+                } else {
+                    showVictory();
+                }
+            } else {
+                // Ferma il timer se sbagli
+                clearInterval(timerInterval);
+                stopGhostLoop(); // Ferma i fantasmi
+                gameOverText.innerText = "HAI SBAGLIATO";
+                triggerJumpscare(3000);
+            }
+        }
+
+        function triggerJumpscare(duration = 3000) {
+            stopGhostLoop(); // Assicurati che i fantasmi si fermino
+            jumpscareImg.src = JUMPSCARE_IMAGE_URL_HD;
+            jumpscareImg.style.animation = 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both infinite';
+            jumpscareOverlay.style.display = 'flex';
+            
+            // Voce rimossa. Rimane solo il rumore.
+            
+            // Suona il rumore di fondo
+            playJumpscareNoise(duration / 1000);
+
+            if (navigator.vibrate) {
+                navigator.vibrate([100, 50, 100, 50, 500]);
+            }
+            
+            setTimeout(() => {
+                gameOverText.style.display = 'block';
+            }, 200);
+
+            // NUOVA LOGICA: Invece di reload, mostra schermata Game Over
+            setTimeout(() => {
+                jumpscareOverlay.style.display = 'none';
+                
+                // FIX: Se il jumpscare è stato scatenato dalla schermata di rimprovero,
+                // dobbiamo nasconderla e passare al container principale del quiz
+                // dove si trova la schermata di Game Over.
+                if (!scoldingScreen.classList.contains('hidden')) {
+                    scoldingScreen.classList.add('hidden');
+                    quizContainer.classList.remove('hidden');
+                }
+                
+                showGameOverScreen();
+            }, duration);
+        }
+
+        // Nuova funzione per mostrare schermata finale di fallimento
+        function showGameOverScreen() {
+            quizContent.classList.add('hidden'); // Nascondi domande
+            
+            // Gestione dei messaggi finali in base all'errore
+            if (gameOverText.innerText === "HAI SBAGLIATO") {
+                // Errore generico nel quiz
+                finalFailureMsg.innerText = "Ma per caso non spiego in modo chiaro?";
+            } else if (gameOverText.innerText.includes("MA TI SEMBRA")) {
+                // Caso Insulto ("è irrilevante")
+                finalFailureMsg.innerText = "Forse così verrai finalmente interrogato la prossima volta";
+            } else {
+                // Caso Tempo Scaduto o altri messaggi speciali
+                finalFailureMsg.innerText = gameOverText.innerText;
+            }
+            
+            gameOverContent.classList.remove('hidden'); // Mostra box Game Over
+        }
+
+        function showVictory() {
+            clearInterval(timerInterval); // Ferma il timer
+            stopGhostLoop(); // Ferma i fantasmi
+            quizContent.classList.add('hidden');
+            resultContent.classList.remove('hidden');
+        }
+        
+        function showRewardScreen() {
+            playClickSound();
+            resultContent.classList.add('hidden');
+            rewardScreen.classList.remove('hidden');
+        }
+
+        // Inizializza lo sfondo all'avvio
+        window.onload = function() {
+            // Avvia sfondo horror
+            initBackground();
+            // Avvia sequenza intro
+            runIntro();
+        };
+
+    </script>
+</body>
+</html>
