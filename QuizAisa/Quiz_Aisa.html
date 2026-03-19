@@ -496,7 +496,8 @@
         
         <!-- Victory Screen: Final Reward Phase -->
         <div id="reward-screen" class="hidden">
-            <img id="reward-img" src="https://mail.google.com/mail/u/0?ui=2&amp;ik=bd76df1298&amp;attid=0.1&amp;permmsgid=msg-f:1856013575400806369&amp;th=19c1e283641157e1&amp;view=fimg&amp;fur=ip&amp;permmsgid=msg-f:1856013575400806369&amp;sz=s0-l75-ft&amp;attbid=ANGjdJ-n3hnLFkF9vyE1MxBLp4FY62cY3ueqbk_-NdLc2gPhFjyRT6QsQi2wVIxDkA4IDWOvDE5AtE32ksmFd_BDBka7kxdkYxA4sXsLbKfePBETBZYHJzTEcdKccKs&amp;disp=emb&amp;realattid=ii_19c1e27fb47a4441a51&amp;zw" alt="Immagine di approvazione">
+            <!-- IMMAGINE LOCALE IMPOSTATA QUI -->
+            <img id="reward-img" src="AisaFelice.jpg" alt="Immagine di approvazione" onerror="this.style.display='none'; this.nextElementSibling.innerText += ' (Immagine mancante: assicurati che AisaFelice.jpg sia nella cartella)'">
             <div class="reward-text">Bravo, si vede che hai studiato, ti metto 8</div>
             <button class="restart-btn center-btn" onclick="reloadGame()">Ricomincia da capo</button>
         </div>
@@ -884,7 +885,9 @@ Non consigliato a giocatori sensibili o deboli di cuore.`,
         // Configurazione Jumpscare
         const JUMPSCARE_IMAGE_URL = "https://lh3.googleusercontent.com/a-/ALV-UjX5WaAKPyFOdPE72EV2dbV2IvSo1Xbdv12mYFqvBUM9gWaaMoRU=s75-c";
         const JUMPSCARE_IMAGE_URL_HD = JUMPSCARE_IMAGE_URL.replace("s75-c", "s800-c");
-        const REWARD_IMAGE_URL = "https://mail.google.com/mail/u/0?ui=2&ik=bd76df1298&attid=0.1&permmsgid=msg-f:1856013575400806369&th=19c1e283641157e1&view=fimg&fur=ip&permmsgid=msg-f:1856013575400806369&sz=s0-l75-ft&attbid=ANGjdJ-n3hnLFkF9vyE1MxBLp4FY62cY3ueqbk_-NdLc2gPhFjyRT6QsQi2wVIxDkA4IDWOvDE5AtE32ksmFd_BDBka7kxdkYxA4sXsLbKfePBETBZYHJzTEcdKccKs&disp=emb&realattid=ii_19c1e27fb47a4441a51&amp;zw";
+        
+        // MODIFICA EFFETTUATA: Nome file locale
+        const REWARD_IMAGE_URL = "AisaFelice.jpg";
 
         const allQuestions = [
             { question: "Quale figura retorica è centrale nella satira del 'Giorno' per descrivere la vita del Giovin Signore?", options: ["L'antifrasi (ironia)", "L'iperbole", "La litote", "La sinestesia"], correct: 0 },
@@ -1017,6 +1020,7 @@ Non consigliato a giocatori sensibili o deboli di cuore.`,
             // 1. Mostra immagine "Felice" (Falsa sicurezza)
             text.style.display = 'none'; 
             img.style.animation = 'none'; // Nessun tremore
+            // Assicurati che l'immagine del premio sia caricata correttamente qui
             img.src = REWARD_IMAGE_URL; 
             overlay.style.display = 'flex';
 
