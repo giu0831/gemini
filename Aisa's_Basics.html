@@ -138,7 +138,7 @@
             z-index: 5;
             pointer-events: none;
         }
-
+        
         #jumpscare-overlay {
             position: absolute;
             top: 0;
@@ -256,9 +256,7 @@
         <div id="question-screen" class="modal hidden-ui">
             <h2 id="question-title" class="text-2xl font-bold mb-2 text-blue-700">Quaderno Trovato!</h2>
             <p id="question-text" class="mb-4 text-lg text-left font-bold border-b-2 pb-2"></p>
-            <div id="answers-container">
-                <!-- Buttons injected here -->
-            </div>
+            <div id="answers-container"></div>
         </div>
 
         <!-- Game Over UI -->
@@ -293,14 +291,13 @@
     const hud = document.getElementById('hud');
 
     // --- Game Variables ---
-    let gameState = 'start'; // start, playing, paused, question, gameover, win, jumpscare
+    let gameState = 'start'; 
     let collectedNotebooks = 0;
     let wrongAnswers = 0;
     const totalNotebooks = 15;
     let currentNotebookMesh = null;
     let currentQuestionIndex = 0;
 
-    // --- Audio Synthesizer for Jumpscare ---
     function playScreech() {
         try {
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -333,7 +330,6 @@
         }, 1500);
     }
 
-    // --- Questions Pool ---
     const questionsPool = [
         { q: "Domanda Facile: In quale città è nato Giuseppe Parini?", options: ["Milano", "Roma", "Bosisio", "Firenze"], correct: 2 },
         { q: "Secondo le tue note sul Cicisbeo, in quale occasione specifica una dama 'poteva scegliere il suo cicisbeo' e rendere pubblica la figura?", options: ["Quando entrava in Arcadia", "Al compimento del diciottesimo anno", "Quando si sposava", "Alla morte del primo figlio"], correct: 2 },
@@ -352,7 +348,6 @@
         { q: "Quale tematica fondamentale viene introdotta nel Preromanticismo dalla 'Poesia Sepolcrale' di autori anglosassoni come Thomas Gray ed Edward Young?", options: ["La meditazione sulla morte e l'illusorietà della gloria terrena", "L'esaltazione della natura selvaggia e indomabile", "Il rifiuto del cristianesimo a favore di un panteismo mistico", "La ribellione politica violenta contro l'assolutismo"], correct: 0 }
     ];
 
-    // --- Three.js Setup ---
     const container = document.getElementById('game-container');
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x050505);
@@ -367,12 +362,12 @@
     scene.add(ambientLight);
 
     const flashlight = new THREE.SpotLight(0xffffff, 1.5, 80, Math.PI / 5, 0.3, 1);
+    flashlight.position.set(0, 0, 0);
     camera.add(flashlight);
     flashlight.target.position.set(0, 0, -1);
     camera.add(flashlight.target);
     scene.add(camera);
 
-    // --- Procedural Textures ---
     function createFloorTexture() {
         const canvas = document.createElement('canvas');
         canvas.width = 128; canvas.height = 128;
@@ -455,7 +450,6 @@
     const gridCells = mapSize + 1;
     const pathGrid = Array(gridCells).fill(null).map(() => Array(gridCells).fill(0));
     const distanceMap = Array(gridCells).fill(null).map(() => Array(gridCells).fill(9999));
-
     const walls = [];
     const notebooks = [];
     const wallGeometry = new THREE.BoxGeometry(tileSize, 10, tileSize);
@@ -472,7 +466,6 @@
         ceiling.rotation.x = Math.PI / 2;
         ceiling.position.y = 10;
         scene.add(ceiling);
-
         for (let x = -mapSize/2; x <= mapSize/2; x++) {
             for (let z = -mapSize/2; z <= mapSize/2; z++) {
                 let gx = x + mapSize/2;
@@ -487,7 +480,6 @@
                 }
             }
         }
-
         let nbsSpawned = 0;
         while(nbsSpawned < totalNotebooks) {
             let rx = (Math.floor(Math.random() * (mapSize-4)) - (mapSize/2 - 2)) * tileSize;
@@ -514,16 +506,16 @@
 
     camera.position.set(0, 4, 0);
     const playerRadius = 2;
-    const baseSpeed = 0.25;
+    const basePlayerSpeed = 0.25;
     const sprintSpeed = 0.45;
     const maxStamina = 100;
     let currentStamina = 100;
     let isSprinting = false;
     let canSprint = true;
-    
     const velocity = new THREE.Vector3();
     let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
-    let pitch = 0, yaw = 0;
+    let pitch = 0;
+    let yaw = 0;
     const PI_2 = Math.PI / 2;
 
     function checkWallCollision(x, z, radius = playerRadius) {
@@ -537,35 +529,34 @@
         return false;
     }
 
-    // --- Key Input Mapping ---
-    const keyState = {};
-
     document.addEventListener('keydown', (event) => {
-        keyState[event.code] = true;
         if (event.code === 'Tab') {
             event.preventDefault();
             if (gameState === 'playing') toggleMap();
             else if (gameState === 'map') document.body.requestPointerLock();
         }
-        updateMovement();
+        if (gameState !== 'playing' && gameState !== 'question') return;
+        switch (event.code) {
+            case 'KeyW': case 'ArrowUp': moveForward = true; break;
+            case 'KeyA': case 'ArrowLeft': moveLeft = true; break;
+            case 'KeyS': case 'ArrowDown': moveBackward = true; break;
+            case 'KeyD': case 'ArrowRight': moveRight = true; break;
+            case 'ShiftLeft': case 'ShiftRight': isSprinting = true; break;
+        }
     });
 
     document.addEventListener('keyup', (event) => {
-        keyState[event.code] = false;
-        updateMovement();
+        switch (event.code) {
+            case 'KeyW': case 'ArrowUp': moveForward = false; break;
+            case 'KeyA': case 'ArrowLeft': moveLeft = false; break;
+            case 'KeyS': case 'ArrowDown': moveBackward = false; break;
+            case 'KeyD': case 'ArrowRight': moveRight = false; break;
+            case 'ShiftLeft': case 'ShiftRight': isSprinting = false; break;
+        }
     });
 
-    function updateMovement() {
-        if (gameState !== 'playing') return;
-        moveForward = !!(keyState['KeyW'] || keyState['ArrowUp']);
-        moveBackward = !!(keyState['KeyS'] || keyState['ArrowDown']);
-        moveLeft = !!(keyState['KeyA'] || keyState['ArrowLeft']);
-        moveRight = !!(keyState['KeyD'] || keyState['ArrowRight']);
-        isSprinting = !!(keyState['ShiftLeft'] || keyState['ShiftRight']);
-    }
-
     document.body.addEventListener('mousemove', (event) => {
-        if (document.pointerLockElement === document.body && (gameState === 'playing' || gameState === 'question')) {
+        if (document.pointerLockElement === document.body && gameState === 'playing') {
             const movementX = event.movementX || 0;
             const movementY = event.movementY || 0;
             yaw -= movementX * 0.002;
@@ -602,16 +593,15 @@
 
     document.addEventListener('pointerlockchange', () => {
         if (document.pointerLockElement === document.body) {
-            if (gameState === 'start' || gameState === 'paused' || gameState === 'resume' || gameState === 'map' || gameState === 'question_cleared') {
+            if (['start', 'paused', 'resume', 'map', 'question'].includes(gameState)) {
                 gameState = 'playing';
                 hideScreens();
-                updateMovement(); // Sincronizza i tasti premuti immediatamente
             }
         } else {
             if (gameState === 'playing') {
                 gameState = 'paused';
                 showScreen('resume');
-                moveForward = moveBackward = moveLeft = moveRight = isSprinting = false;
+                // Non resettiamo gli input qui perché vogliamo catturarli durante la domanda
             }
         }
     });
@@ -623,7 +613,6 @@
     function toggleMap() {
         gameState = 'map';
         document.exitPointerLock();
-        moveForward = moveBackward = moveLeft = moveRight = isSprinting = false;
         showScreen('map');
         drawMap();
     }
@@ -635,9 +624,8 @@
         const worldSize = mapSize * tileSize;
         const offset = worldSize / 2;
         const scale = canvas.width / worldSize;
-        const toCanvasX = (worldX) => (worldX + offset) * scale;
-        const toCanvasY = (worldZ) => (worldZ + offset) * scale;
-
+        function toCanvasX(worldX) { return (worldX + offset) * scale; }
+        function toCanvasY(worldZ) { return (worldZ + offset) * scale; }
         ctx.fillStyle = '#444';
         for (let w of walls) {
             ctx.fillRect(toCanvasX(w.min.x), toCanvasY(w.min.z), (w.max.x - w.min.x) * scale, (w.max.z - w.min.z) * scale);
@@ -652,30 +640,28 @@
             grad.addColorStop(0, 'rgba(255, 0, 0, 0.7)'); grad.addColorStop(1, 'rgba(255, 0, 0, 0)');
             ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(ax, ay, 50, 0, Math.PI * 2); ctx.fill();
         }
-        ctx.fillStyle = '#0088ff'; ctx.beginPath(); ctx.arc(toCanvasX(camera.position.x), toCanvasY(camera.position.z), 5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#0088ff';
+        ctx.beginPath(); ctx.arc(toCanvasX(camera.position.x), toCanvasY(camera.position.z), 5, 0, Math.PI * 2); ctx.fill();
         const dirEuler = new THREE.Euler(0, yaw, 0, 'YXZ');
         const forwardDir = new THREE.Vector3(0, 0, -1).applyEuler(dirEuler);
-        ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(toCanvasX(camera.position.x), toCanvasY(camera.position.z));
+        ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(toCanvasX(camera.position.x), toCanvasY(camera.position.z));
         ctx.lineTo(toCanvasX(camera.position.x + forwardDir.x * 8), toCanvasY(camera.position.z + forwardDir.z * 8)); ctx.stroke();
     }
 
     function triggerQuestion(meshIndex) {
         gameState = 'question';
         document.exitPointerLock();
-        
         currentNotebookMesh = notebooks[meshIndex];
         let qData = questionsPool[currentQuestionIndex % questionsPool.length];
-        
         showScreen('question');
         document.getElementById('question-title').innerText = `Quaderno ${collectedNotebooks + 1}/${totalNotebooks} Trovato!`;
         questionText.innerText = qData.q;
-        
         let shuffledOptions = qData.options.map((opt, idx) => ({ text: opt, isCorrect: (idx === qData.correct) }));
         for (let i = shuffledOptions.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
         }
-
         answersContainer.innerHTML = '';
         shuffledOptions.forEach((optData) => {
             let btn = document.createElement('button');
@@ -692,7 +678,6 @@
         collectedNotebooks++;
         hud.innerText = `Quaderni: ${collectedNotebooks}/${totalNotebooks}`;
         currentQuestionIndex++;
-
         if (isCorrect) {
             uiLayer.style.background = 'rgba(0, 255, 0, 0.3)';
         } else {
@@ -702,16 +687,13 @@
             uiLayer.style.background = 'rgba(255, 0, 0, 0.6)';
         }
 
-        setTimeout(() => {
-            if (collectedNotebooks >= totalNotebooks) {
-                gameState = 'win';
-                showScreen('win');
-            } else {
-                // Invece di mostrare Resume, chiediamo il lock per tornare subito a giocare
-                gameState = 'question_cleared';
-                document.body.requestPointerLock();
-            }
-        }, 150);
+        if (collectedNotebooks >= totalNotebooks) {
+            gameState = 'win';
+            showScreen('win');
+        } else {
+            // Invece di mostrare la pausa, riprendiamo subito
+            document.body.requestPointerLock();
+        }
     }
 
     function triggerGameOver() {
@@ -724,7 +706,8 @@
     function updateAisaPathfinding() {
         let px = Math.round(camera.position.x / tileSize) + mapSize/2;
         let pz = Math.round(camera.position.z / tileSize) + mapSize/2;
-        px = Math.max(0, Math.min(mapSize, px)); pz = Math.max(0, Math.min(mapSize, pz));
+        px = Math.max(0, Math.min(mapSize, px));
+        pz = Math.max(0, Math.min(mapSize, pz));
         for(let i=0; i<=mapSize; i++) for(let j=0; j<=mapSize; j++) distanceMap[i][j] = 9999;
         let queue = [{x: px, z: pz, dist: 0}];
         distanceMap[px][pz] = 0;
@@ -740,7 +723,10 @@
                             if (pathGrid[curr.x + d.dx][curr.z] === 1 || pathGrid[curr.x][curr.z + d.dz] === 1) continue;
                         }
                         let newDist = curr.dist + (d.dx !== 0 && d.dz !== 0 ? 1.414 : 1);
-                        if (newDist < distanceMap[nx][nz]) { distanceMap[nx][nz] = newDist; queue.push({x: nx, z: nz, dist: newDist}); }
+                        if (newDist < distanceMap[nx][nz]) {
+                            distanceMap[nx][nz] = newDist;
+                            queue.push({x: nx, z: nz, dist: newDist});
+                        }
                     }
                 }
             }
@@ -748,26 +734,17 @@
     }
 
     const clock = new THREE.Clock();
-
     function animate() {
         requestAnimationFrame(animate);
         const delta = clock.getDelta();
-
         if (gameState === 'playing') {
-            updateMovement(); // Controlla lo stato dei tasti ad ogni frame
-            
             notebooks.forEach(nb => {
                 nb.rotation.y += 2 * delta;
                 nb.position.y = 3 + Math.sin(clock.elapsedTime * 3 + nb.position.x) * 0.5;
-                if (camera.position.distanceTo(nb.position) < 4) {
-                    const index = notebooks.indexOf(nb);
-                    if (index > -1) triggerQuestion(index);
-                }
+                if (camera.position.distanceTo(nb.position) < 4) triggerQuestion(notebooks.indexOf(nb));
             });
-
             velocity.x = 0; velocity.z = 0;
             const isMoving = moveForward || moveBackward || moveLeft || moveRight;
-
             if (isSprinting && isMoving && canSprint) {
                 currentStamina -= 30 * delta;
                 if (currentStamina <= 0) { currentStamina = 0; canSprint = false; }
@@ -776,24 +753,19 @@
                 if (currentStamina > 25) canSprint = true;
                 if (currentStamina > maxStamina) currentStamina = maxStamina;
             }
-
             const staminaBar = document.getElementById('stamina-bar');
             staminaBar.style.width = `${(currentStamina / maxStamina) * 100}%`;
             staminaBar.style.backgroundColor = canSprint ? '#00ff00' : '#ff0000';
-
-            const moveSpeed = (isSprinting && isMoving && canSprint) ? sprintSpeed : baseSpeed;
+            const moveSpeed = (isSprinting && isMoving && canSprint) ? sprintSpeed : basePlayerSpeed;
             const dirEuler = new THREE.Euler(0, yaw, 0, 'YXZ');
             const forwardDir = new THREE.Vector3(0, 0, -1).applyEuler(dirEuler);
             const rightDir = new THREE.Vector3(1, 0, 0).applyEuler(dirEuler);
-
             if (moveForward) velocity.add(forwardDir.clone().multiplyScalar(moveSpeed));
             if (moveBackward) velocity.add(forwardDir.clone().multiplyScalar(-moveSpeed));
             if (moveRight) velocity.add(rightDir.clone().multiplyScalar(moveSpeed));
             if (moveLeft) velocity.add(rightDir.clone().multiplyScalar(-moveSpeed));
-
             if (!checkWallCollision(camera.position.x + velocity.x, camera.position.z)) camera.position.x += velocity.x;
             if (!checkWallCollision(camera.position.x, camera.position.z + velocity.z)) camera.position.z += velocity.z;
-
             if (aisa.active && aisa.currentSpeed > 0) {
                 updateAisaPathfinding();
                 let ax = Math.round(aisa.mesh.position.x / tileSize) + mapSize/2;
@@ -804,9 +776,7 @@
                 for(let d of dirs) {
                     let nx = ax + d.dx, nz = az + d.dz;
                     if (nx >= 0 && nx <= mapSize && nz >= 0 && nz <= mapSize) {
-                        if (d.dx !== 0 && d.dz !== 0) {
-                            if (pathGrid[ax + d.dx][az] === 1 || pathGrid[az + d.dz][ax] === 1) continue;
-                        }
+                        if (d.dx !== 0 && d.dz !== 0) if (pathGrid[ax + d.dx][az] === 1 || pathGrid[ax][az + d.dz] === 1) continue;
                         if (distanceMap[nx][nz] < min_dist) { min_dist = distanceMap[nx][nz]; targetWorldX = (nx - mapSize/2) * tileSize; targetWorldZ = (nz - mapSize/2) * tileSize; foundBetter = true; }
                     }
                 }
@@ -824,9 +794,7 @@
     }
 
     window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
     createMap();
