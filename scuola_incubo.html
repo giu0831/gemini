@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>School Strike FPS - Multi-Level Update</title>
+    <title>School Strike FPS - Horror Update</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
@@ -93,14 +93,14 @@
     <div id="blocker">
         <div id="instructions">
             <h1 class="text-5xl font-black text-red-500 mb-4">L'INCUBO A SCUOLA</h1>
-            <p class="text-xl mb-4 font-bold text-slate-300">Esplora i Piani, Nasconditi, Sopravvivi</p>
+            <p class="text-xl mb-4 font-bold text-slate-300">Esplora, Nasconditi, Sopravvivi</p>
             <div class="text-left text-slate-300 bg-slate-800 p-4 rounded text-sm font-mono border border-slate-600">
-                <p class="mb-2">➤ <b>W, A, S, D</b> = Muoviti (Usa le scale per salire)</p>
+                <p class="mb-2">➤ <b>W, A, S, D</b> = Muoviti</p>
                 <p class="mb-2">➤ <b>Mouse</b> = Mira / <b>Click SX</b> = Spara</p>
                 <p class="mb-2 text-blue-400 font-bold">➤ <b>E</b> = Porte / Entra negli Armadietti</p>
                 <p class="text-red-400 mt-4 border-t border-slate-600 pt-2 font-bold">
-                    I mostri perlustrano entrambi i piani.<br>
-                    Sfrutta gli armadietti per salvarti la vita.
+                    I mostri sono numerosi. Usa gli armadietti per salvarti.<br>
+                    Se ti vedono entrare... prega.
                 </p>
             </div>
             <p class="mt-6 text-sm text-slate-500 animate-pulse">Clicca per iniziare la missione</p>
@@ -137,7 +137,8 @@
 
     <script>
         // --- ASSET ---
-        const MONSTER_IMG_URL = "stenodelfo.jpg"; // Aggiornato all'immagine caricata
+        // Sostituita con l'immagine richiesta. Aggiunto https: se mancante.
+        const MONSTER_IMG_URL = "https://lh3.googleusercontent.com/a-/ALV-UjX5WaAKPyFOdPE72EV2dbV2IvSo1Xbdv12mYFqvBUM9gWaaMoRU=s75-c"; 
 
         const scoreElement = document.getElementById('score');
         const livesElement = document.getElementById('lives');
@@ -156,25 +157,13 @@
         let isHiding = false;
         let currentLocker = null;
 
-        // Costanti di Proporzione (Scala 1 unità = 1 metro)
-        const PLAYER_HEIGHT = 1.6;
-        const WALL_HEIGHT = 3.5;
-        const DOOR_WIDTH = 1.2;
-        const DOOR_HEIGHT = 2.2;
-        const LOCKER_WIDTH = 0.8;
-        const LOCKER_HEIGHT = 2.0;
-        const LOCKER_DEPTH = 0.8;
-        
-        const FLOOR_1_Y = 0;
-        const FLOOR_2_Y = 3.5; // Altezza del secondo piano
-
         // --- THREE.JS INIT ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x0f172a); // Più buio
-        scene.fog = new THREE.Fog(0x0f172a, 2, 40); 
+        scene.background = new THREE.Color(0xe2e8f0);
+        scene.fog = new THREE.Fog(0xe2e8f0, 10, 120); // Nebbia più densa e scura
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, FLOOR_1_Y + PLAYER_HEIGHT, -45); // Spawna all'inizio del primo corridoio
+        camera.position.set(0, 3, 0); // Spawna nel corridoio centrale
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -221,10 +210,9 @@
             }
         });
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-        scene.add(ambientLight);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6)); 
         const dirLight = new THREE.DirectionalLight(0xffffff, 0.3);
-        dirLight.position.set(10, 20, 10);
+        dirLight.position.set(20, 50, 20);
         scene.add(dirLight);
 
         // --- TEXTURE E MATERIALI ---
@@ -232,13 +220,15 @@
             const canvas = document.createElement('canvas');
             canvas.width = 256; canvas.height = 256;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#cbd5e1'; ctx.fillRect(0, 0, 256, 256);
-            ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 4;
+            ctx.fillStyle = '#cbd5e1'; 
+            ctx.fillRect(0, 0, 256, 256);
+            ctx.strokeStyle = '#94a3b8'; 
+            ctx.lineWidth = 4;
             ctx.strokeRect(0, 0, 128, 128); ctx.strokeRect(128, 0, 128, 128);
             ctx.strokeRect(0, 128, 128, 128); ctx.strokeRect(128, 128, 128, 128);
             const tex = new THREE.CanvasTexture(canvas);
             tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
-            tex.repeat.set(20, 20); // Regolato per stanze più piccole
+            tex.repeat.set(80, 80);
             return tex;
         }
 
@@ -246,9 +236,12 @@
             const canvas = document.createElement('canvas');
             canvas.width = 256; canvas.height = 256;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#f1f5f9'; ctx.fillRect(0, 0, 256, 128);
-            ctx.fillStyle = '#e2e8f0'; ctx.fillRect(0, 128, 256, 128);
-            ctx.fillStyle = '#64748b'; ctx.fillRect(0, 124, 256, 8);
+            ctx.fillStyle = '#f1f5f9'; 
+            ctx.fillRect(0, 0, 256, 128);
+            ctx.fillStyle = '#e2e8f0'; 
+            ctx.fillRect(0, 128, 256, 128);
+            ctx.fillStyle = '#64748b'; 
+            ctx.fillRect(0, 124, 256, 8);
             const tex = new THREE.CanvasTexture(canvas);
             tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
             tex.repeat.set(2, 1);
@@ -259,226 +252,237 @@
             const canvas = document.createElement('canvas');
             canvas.width = 128; canvas.height = 256;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#475569'; ctx.fillRect(0, 0, 128, 256);
-            ctx.strokeStyle = '#334155'; ctx.lineWidth = 4; ctx.strokeRect(4, 4, 120, 248);
-            ctx.fillStyle = '#0f172a'; for(let i=0; i<6; i++) ctx.fillRect(30, 20 + i*10, 68, 4);
-            ctx.fillStyle = '#94a3b8'; ctx.fillRect(100, 100, 8, 30);
+            ctx.fillStyle = '#475569'; 
+            ctx.fillRect(0, 0, 128, 256);
+            ctx.strokeStyle = '#334155'; 
+            ctx.lineWidth = 4;
+            ctx.strokeRect(4, 4, 120, 248);
+            ctx.fillStyle = '#0f172a';
+            for(let i=0; i<6; i++) ctx.fillRect(30, 20 + i*10, 68, 4);
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillRect(100, 100, 8, 30);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function createBlackboardTexture() {
+            const phrases = [
+                "Carpe Diem", "Veni, Vidi, Vici", "Alea Iacta Est", 
+                "Cogito Ergo Sum", "Ad Astra Per Aspera", "In Vino Veritas",
+                "Homo Faber Fortunae Suae", "Lupus in Fabula", "Memento Mori"
+            ];
+            const phrase = phrases[Math.floor(Math.random() * phrases.length)];
+            const canvas = document.createElement('canvas');
+            canvas.width = 512; canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#1e293b'; ctx.fillRect(0, 0, 512, 256);
+            ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 15; ctx.strokeRect(7, 7, 498, 242);
+            ctx.fillStyle = '#f8fafc'; ctx.font = 'italic 34px "Georgia"';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(phrase, 256, 128);
             return new THREE.CanvasTexture(canvas);
         }
 
         const floorMat = new THREE.MeshPhongMaterial({ map: createTileTexture() });
-        const stairMat = new THREE.MeshPhongMaterial({ color: 0x94a3b8 }); // Grigio per le scale
         const wallMat = new THREE.MeshPhongMaterial({ map: createWallTexture() });
-        const ceilingMat = new THREE.MeshPhongMaterial({ color: 0xeeeeee });
-        const woodMat = new THREE.MeshPhongMaterial({ color: 0x5C4033 }); // Marrone scuro per porte e banchi
+        const ceilingMat = new THREE.MeshPhongMaterial({ color: 0xffffff });
+        const woodMat = new THREE.MeshPhongMaterial({ color: 0x8B5A2B });
+        // Porta color marrone scuro come richiesto
+        const doorMat = new THREE.MeshPhongMaterial({ color: 0x5C4033 });
         const lockerMat = new THREE.MeshPhongMaterial({ map: createLockerTexture() });
 
-        // --- SISTEMA DI COLLISIONE 3D ---
-        const wallBoxes = []; // {minX, maxX, minY, maxY, minZ, maxZ}
-        const floors = [];    // Oggetti mesh per il raycasting della gravità
+        // --- MAPPA NON-LINEARE (Corridoio Centrale + Aule Asimmetriche) ---
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(300, 300), floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        scene.add(floor);
+
+        const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(300, 300), ceilingMat);
+        ceiling.rotation.x = Math.PI / 2; ceiling.position.y = 15;
+        scene.add(ceiling);
+
+        const wallBoxes = []; 
         const doors = [];     
         const lockers = [];   
-        const validZones = []; // {minX, maxX, minZ, maxZ, y} per lo spawn
+        const validZones = []; // Zone dove possono spawnare i mostri senza finire fuori mappa
 
-        function addWall(cx, cy, cz, w, h, d, material = wallMat) {
+        // Zona del corridoio centrale
+        validZones.push({ minX: -9, maxX: 9, minZ: -95, maxZ: 95 });
+
+        function addStaticBox(cx, cz, w, h, d, material) {
             const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
-            mesh.position.set(cx, cy, cz);
+            mesh.position.set(cx, h/2, cz);
             scene.add(mesh);
-            wallBoxes.push({ 
-                minX: cx - w/2, maxX: cx + w/2, 
-                minY: cy - h/2, maxY: cy + h/2, 
-                minZ: cz - d/2, maxZ: cz + d/2 
-            });
+            wallBoxes.push({ minX: cx - w/2, maxX: cx + w/2, minZ: cz - d/2, maxZ: cz + d/2 });
             return mesh;
         }
 
-        function addFloor(cx, cy, cz, w, d, addCeiling = true) {
-            const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, d), floorMat);
-            mesh.rotation.x = -Math.PI / 2;
-            mesh.position.set(cx, cy, cz);
-            scene.add(mesh);
-            floors.push(mesh);
-
-            if(addCeiling) {
-                const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(w, d), ceilingMat);
-                ceiling.rotation.x = Math.PI / 2;
-                ceiling.position.set(cx, cy + WALL_HEIGHT, cz);
-                scene.add(ceiling);
-            }
-        }
-
         class Door {
-            constructor(cx, cy, cz, isVertical) {
-                this.w = isVertical ? 0.2 : DOOR_WIDTH;
-                this.d = isVertical ? DOOR_WIDTH : 0.2;
-                this.h = DOOR_HEIGHT;
-                
-                this.mesh = new THREE.Mesh(new THREE.BoxGeometry(this.w, this.h, this.d), woodMat);
-                this.mesh.position.set(cx, cy + this.h/2, cz);
+            constructor(cx, cz, w, h, d, isVertical) {
+                this.w = w; this.h = h; this.d = d;
+                this.mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), doorMat);
+                this.mesh.position.set(cx, h/2, cz);
                 scene.add(this.mesh);
                 
                 this.isOpen = false;
-                this.closedPos = new THREE.Vector3(cx, cy + this.h/2, cz);
-                const slideDist = DOOR_WIDTH - 0.1;
-                
-                if(isVertical) this.openPos = new THREE.Vector3(cx, cy + this.h/2, cz + slideDist);
-                else this.openPos = new THREE.Vector3(cx + slideDist, cy + this.h/2, cz);
+                this.closedPos = new THREE.Vector3(cx, h/2, cz);
+                const slideDist = isVertical ? d - 0.5 : w - 0.5;
+                if(isVertical) this.openPos = new THREE.Vector3(cx, h/2, cz + slideDist);
+                else this.openPos = new THREE.Vector3(cx + slideDist, h/2, cz);
 
                 this.mesh.userData.isInteractable = true;
                 this.mesh.userData.type = "door";
                 this.mesh.userData.obj = this;
             }
             toggle() { this.isOpen = !this.isOpen; }
-            update(dt) { this.mesh.position.lerp(this.isOpen ? this.openPos : this.closedPos, 8 * dt); }
+            update(dt) { this.mesh.position.lerp(this.isOpen ? this.openPos : this.closedPos, 6 * dt); }
             getBounds() {
-                if (this.isOpen && this.mesh.position.distanceTo(this.openPos) < 0.2) return null;
+                if (this.isOpen && this.mesh.position.distanceTo(this.openPos) < 1) return null;
                 const p = this.mesh.position;
-                return { 
-                    minX: p.x - this.w/2, maxX: p.x + this.w/2, 
-                    minY: p.y - this.h/2, maxY: p.y + this.h/2, 
-                    minZ: p.z - this.d/2, maxZ: p.z + this.d/2 
-                };
+                return { minX: p.x - this.w/2, maxX: p.x + this.w/2, minZ: p.z - this.d/2, maxZ: p.z + this.d/2 };
             }
         }
 
         class Locker {
-            constructor(cx, cy, cz, faceXDir) {
-                this.mesh = new THREE.Mesh(new THREE.BoxGeometry(LOCKER_WIDTH, LOCKER_HEIGHT, LOCKER_DEPTH), lockerMat);
-                this.mesh.position.set(cx, cy + LOCKER_HEIGHT/2, cz);
-                if (faceXDir === -1) this.mesh.rotation.y = -Math.PI / 2; // Ovest
-                else if (faceXDir === 1) this.mesh.rotation.y = Math.PI / 2; // Est
-                else if (faceXDir === 2) this.mesh.rotation.y = Math.PI; // Sud
+            constructor(cx, cz, faceXDir) {
+                this.mesh = new THREE.Mesh(new THREE.BoxGeometry(4, 12, 4), lockerMat);
+                this.mesh.position.set(cx, 6, cz);
+                if (faceXDir === -1) this.mesh.rotation.y = -Math.PI / 2; // Guarda a ovest
+                else if (faceXDir === 1) this.mesh.rotation.y = Math.PI / 2; // Guarda a est
                 scene.add(this.mesh);
                 
-                // Offset di uscita davanti alla porta
-                let exitOffsetX = 0, exitOffsetZ = 0;
-                if(faceXDir === -1) exitOffsetX = -1;
-                else if(faceXDir === 1) exitOffsetX = 1;
-                else if(faceXDir === 2) exitOffsetZ = 1;
-                else exitOffsetZ = -1; // Nord
-
-                this.exitPos = new THREE.Vector3(cx + exitOffsetX, cy + PLAYER_HEIGHT, cz + exitOffsetZ);
+                // Il player esce davanti all'armadietto
+                this.exitPos = new THREE.Vector3(cx + (faceXDir * 4), 3, cz);
                 
                 this.mesh.userData.isInteractable = true;
                 this.mesh.userData.type = "locker";
                 this.mesh.userData.obj = this;
                 
-                wallBoxes.push({ 
-                    minX: cx - LOCKER_WIDTH/2, maxX: cx + LOCKER_WIDTH/2, 
-                    minY: cy, maxY: cy + LOCKER_HEIGHT, 
-                    minZ: cz - LOCKER_DEPTH/2, maxZ: cz + LOCKER_DEPTH/2 
-                });
+                wallBoxes.push({ minX: cx - 2, maxX: cx + 2, minZ: cz - 2, maxZ: cz + 2 });
             }
         }
 
-        // --- COSTRUZIONE MAPPA PROPORZIONATA A 2 PIANI ---
-        const corrW = 4; // Larghezza corridoio
-        
-        // PIANO 1 (Y = 0)
-        // Corridoio P1: da Z = -50 a Z = 5
-        addFloor(0, FLOOR_1_Y, -22.5, corrW, 55); 
-        validZones.push({ minX: -corrW/2 + 0.5, maxX: corrW/2 - 0.5, minZ: -48, maxZ: 3, y: FLOOR_1_Y });
+        // --- GENERATORE PROCEDURALE ---
+        let lastZRight = -100;
+        let lastZLeft = -100;
+        let mapZ = -90;
 
-        // Muri corridoio P1
-        addWall(-corrW/2 - 0.1, FLOOR_1_Y + WALL_HEIGHT/2, -22.5, 0.2, WALL_HEIGHT, 55); // Ovest
-        addWall(corrW/2 + 0.1, FLOOR_1_Y + WALL_HEIGHT/2, -22.5, 0.2, WALL_HEIGHT, 55);  // Est
-        addWall(0, FLOOR_1_Y + WALL_HEIGHT/2, -50.1, corrW, WALL_HEIGHT, 0.2); // Chiusura Nord
+        function createGapWall(xCenter, zStart, zEnd, isRight) {
+            const length = zEnd - zStart;
+            if (length <= 0) return;
+            const cz = (zStart + zEnd) / 2;
+            addStaticBox(xCenter, cz, 2, 15, length, wallMat);
 
-        // Aula P1 Destra
-        const roomSize = 8;
-        addFloor(corrW/2 + roomSize/2 + 0.2, FLOOR_1_Y, -30, roomSize, roomSize);
-        addWall(corrW/2 + roomSize/2 + 0.2, FLOOR_1_Y + WALL_HEIGHT/2, -30 - roomSize/2, roomSize, WALL_HEIGHT, 0.2); // N
-        addWall(corrW/2 + roomSize/2 + 0.2, FLOOR_1_Y + WALL_HEIGHT/2, -30 + roomSize/2, roomSize, WALL_HEIGHT, 0.2); // S
-        addWall(corrW/2 + roomSize + 0.3, FLOOR_1_Y + WALL_HEIGHT/2, -30, 0.2, WALL_HEIGHT, roomSize); // E
-        doors.push(new Door(corrW/2 + 0.1, FLOOR_1_Y, -30, true)); // Porta
-        validZones.push({ minX: corrW/2 + 1, maxX: corrW/2 + roomSize - 1, minZ: -30 - roomSize/2 + 1, maxZ: -30 + roomSize/2 - 1, y: FLOOR_1_Y });
-        
-        // Banchi Aula P1 Destra
-        for(let bx = corrW/2 + 2; bx <= corrW/2 + roomSize - 1; bx += 2.5) {
-            for(let bz = -30 - 2; bz <= -30 + 2; bz += 2.5) {
-                addWall(bx, FLOOR_1_Y + 0.4, bz, 1.2, 0.8, 0.8, woodMat);
+            // Spawna armadietti lungo il corridoio
+            if (length > 10) {
+                const numLockers = Math.floor(length / 4.5);
+                const startZ = cz - (numLockers * 4.2) / 2 + 2;
+                for(let i=0; i<numLockers; i++) {
+                    if (Math.random() > 0.3) {
+                        lockers.push(new Locker(isRight ? xCenter - 1.5 : xCenter + 1.5, startZ + i*4.2, isRight ? -1 : 1));
+                    }
+                }
             }
         }
 
-        // Armadietti P1
-        lockers.push(new Locker(-corrW/2 + 0.5, FLOOR_1_Y, -10, 1));
-        lockers.push(new Locker(-corrW/2 + 0.5, FLOOR_1_Y, -11, 1));
-        lockers.push(new Locker(-corrW/2 + 0.5, FLOOR_1_Y, -40, 1));
+        while (mapZ < 80) {
+            // Aule variegate lato Destro (Est)
+            const dRight = 20 + Math.random() * 20; // Profondità
+            const wRight = 20 + Math.random() * 20; // Larghezza
+            if (Math.random() > 0.1) { 
+                createGapWall(10, lastZRight, mapZ, true);
+                const cx = 10 + wRight / 2; const cz = mapZ + dRight / 2;
+                validZones.push({ minX: cx - wRight/2 + 1, maxX: cx + wRight/2 - 1, minZ: cz - dRight/2 + 1, maxZ: cz + dRight/2 - 1 });
 
-        // SCALE (Da Z = 5 a Z = 20)
-        const stairLength = 15;
-        // Rampa invisibile per collisione e gravità
-        const rampGeo = new THREE.PlaneGeometry(corrW, Math.sqrt(stairLength*stairLength + FLOOR_2_Y*FLOOR_2_Y));
-        const rampMesh = new THREE.Mesh(rampGeo, new THREE.MeshBasicMaterial({visible: false}));
-        rampMesh.rotation.x = -Math.atan2(stairLength, FLOOR_2_Y);
-        rampMesh.position.set(0, FLOOR_2_Y/2, 5 + stairLength/2);
-        scene.add(rampMesh); floors.push(rampMesh);
-        
-        // Soffitto sopra le scale (inclinato)
-        const stairCeiling = new THREE.Mesh(rampGeo, ceilingMat);
-        stairCeiling.rotation.x = -Math.atan2(stairLength, FLOOR_2_Y);
-        stairCeiling.position.set(0, FLOOR_2_Y/2 + WALL_HEIGHT, 5 + stairLength/2);
-        // Per visualizzare correttamente il lato inferiore
-        stairCeiling.material.side = THREE.DoubleSide; 
-        scene.add(stairCeiling);
+                addStaticBox(cx, cz - dRight/2, wRight, 15, 2, wallMat); // N
+                addStaticBox(cx, cz + dRight/2, wRight, 15, 2, wallMat); // S
+                addStaticBox(cx + wRight/2, cz, 2, 15, dRight, wallMat); // E
+                
+                // Muro Ovest (confine corridoio) con Porta
+                const wallLen = (dRight - 5) / 2;
+                addStaticBox(10, cz - dRight/2 + wallLen/2, 2, 15, wallLen, wallMat);
+                addStaticBox(10, cz + dRight/2 - wallLen/2, 2, 15, wallLen, wallMat);
+                doors.push(new Door(10, cz, 2, 15, 5, true));
 
-        // Gradini visivi
-        const numSteps = 24;
-        const stepH = FLOOR_2_Y / numSteps;
-        const stepD = stairLength / numSteps;
-        for(let i=0; i<numSteps; i++) {
-            const stepMesh = new THREE.Mesh(new THREE.BoxGeometry(corrW, stepH, stepD), stairMat);
-            stepMesh.position.set(0, (i * stepH) + stepH/2, 5 + (i * stepD) + stepD/2);
-            scene.add(stepMesh);
-            // Non aggiungiamo ai wallBoxes per permettere alla rampa di gestire il movimento fluido
+                // Lavagna sul muro Est, guarda verso Ovest
+                const bb = new THREE.Mesh(new THREE.PlaneGeometry(12, 6), new THREE.MeshBasicMaterial({ map: createBlackboardTexture() }));
+                bb.position.set(cx + wRight/2 - 1.1, 7, cz); bb.rotation.y = -Math.PI / 2;
+                scene.add(bb);
+
+                // Cattedra e Banchi
+                addStaticBox(cx + wRight/2 - 5, cz, 3, 3, 6, woodMat);
+                for(let bx = cx - wRight/2 + 5; bx <= cx + wRight/2 - 10; bx += 6) {
+                    for(let bz = cz - dRight/2 + 5; bz <= cz + dRight/2 - 5; bz += 5) addStaticBox(bx, bz, 2.5, 2.5, 3.5, woodMat);
+                }
+                lastZRight = mapZ + dRight;
+            }
+
+            // Aule variegate lato Sinistro (Ovest)
+            const dLeft = 20 + Math.random() * 20;
+            const wLeft = 20 + Math.random() * 20;
+            if (Math.random() > 0.1) {
+                createGapWall(-10, lastZLeft, mapZ, false);
+                const cx = -10 - wLeft / 2; const cz = mapZ + dLeft / 2;
+                validZones.push({ minX: cx - wLeft/2 + 1, maxX: cx + wLeft/2 - 1, minZ: cz - dLeft/2 + 1, maxZ: cz + dLeft/2 - 1 });
+
+                addStaticBox(cx, cz - dLeft/2, wLeft, 15, 2, wallMat); // N
+                addStaticBox(cx, cz + dLeft/2, wLeft, 15, 2, wallMat); // S
+                addStaticBox(cx - wLeft/2, cz, 2, 15, dLeft, wallMat); // W
+                
+                // Muro Est (confine corridoio) con Porta
+                const wallLen = (dLeft - 5) / 2;
+                addStaticBox(-10, cz - dLeft/2 + wallLen/2, 2, 15, wallLen, wallMat);
+                addStaticBox(-10, cz + dLeft/2 - wallLen/2, 2, 15, wallLen, wallMat);
+                doors.push(new Door(-10, cz, 2, 15, 5, true));
+
+                // Lavagna sul muro Ovest, guarda verso Est
+                const bb = new THREE.Mesh(new THREE.PlaneGeometry(12, 6), new THREE.MeshBasicMaterial({ map: createBlackboardTexture() }));
+                bb.position.set(cx - wLeft/2 + 1.1, 7, cz); bb.rotation.y = Math.PI / 2;
+                scene.add(bb);
+
+                // Cattedra e Banchi
+                addStaticBox(cx - wLeft/2 + 5, cz, 3, 3, 6, woodMat);
+                for(let bx = cx + wLeft/2 - 5; bx >= cx - wLeft/2 + 10; bx -= 6) {
+                    for(let bz = cz - dLeft/2 + 5; bz <= cz + dLeft/2 - 5; bz += 5) addStaticBox(bx, bz, 2.5, 2.5, 3.5, woodMat);
+                }
+                lastZLeft = mapZ + dLeft;
+            }
+
+            mapZ += Math.max(dRight, dLeft) + (Math.random() * 10 + 5);
         }
 
-        // Muri laterali scale
-        addWall(-corrW/2 - 0.1, FLOOR_2_Y/2 + WALL_HEIGHT/2, 5 + stairLength/2, 0.2, WALL_HEIGHT + FLOOR_2_Y, stairLength);
-        addWall(corrW/2 + 0.1, FLOOR_2_Y/2 + WALL_HEIGHT/2, 5 + stairLength/2, 0.2, WALL_HEIGHT + FLOOR_2_Y, stairLength);
+        // Chiude la mappa
+        createGapWall(10, lastZRight, 100, true);
+        createGapWall(-10, lastZLeft, 100, false);
+        addStaticBox(0, -100, 22, 15, 2, wallMat);
+        addStaticBox(0, 100, 22, 15, 2, wallMat);
 
-
-        // PIANO 2 (Y = 3.5)
-        // Corridoio P2: da Z = 20 a Z = 60
-        addFloor(0, FLOOR_2_Y, 40, corrW, 40);
-        validZones.push({ minX: -corrW/2 + 0.5, maxX: corrW/2 - 0.5, minZ: 22, maxZ: 58, y: FLOOR_2_Y });
-
-        // Muri corridoio P2
-        addWall(-corrW/2 - 0.1, FLOOR_2_Y + WALL_HEIGHT/2, 40, 0.2, WALL_HEIGHT, 40);
-        addWall(corrW/2 + 0.1, FLOOR_2_Y + WALL_HEIGHT/2, 40, 0.2, WALL_HEIGHT, 40);
-        addWall(0, FLOOR_2_Y + WALL_HEIGHT/2, 60.1, corrW, WALL_HEIGHT, 0.2); // Chiusura Sud
-        
-        // Ringhiera / Muro vuoto dietro le scale per non cadere
-        addWall(0, FLOOR_2_Y + WALL_HEIGHT/2, 4.9, corrW, WALL_HEIGHT, 0.2); 
-
-        // Aula P2 Sinistra
-        addFloor(-corrW/2 - roomSize/2 - 0.2, FLOOR_2_Y, 40, roomSize, roomSize);
-        addWall(-corrW/2 - roomSize/2 - 0.2, FLOOR_2_Y + WALL_HEIGHT/2, 40 - roomSize/2, roomSize, WALL_HEIGHT, 0.2); // N
-        addWall(-corrW/2 - roomSize/2 - 0.2, FLOOR_2_Y + WALL_HEIGHT/2, 40 + roomSize/2, roomSize, WALL_HEIGHT, 0.2); // S
-        addWall(-corrW/2 - roomSize - 0.3, FLOOR_2_Y + WALL_HEIGHT/2, 40, 0.2, WALL_HEIGHT, roomSize); // W
-        doors.push(new Door(-corrW/2 - 0.1, FLOOR_2_Y, 40, true));
-        validZones.push({ minX: -corrW/2 - roomSize + 1, maxX: -corrW/2 - 1, minZ: 40 - roomSize/2 + 1, maxZ: 40 + roomSize/2 - 1, y: FLOOR_2_Y });
-
-        // Banchi Aula P2
-        for(let bx = -corrW/2 - roomSize + 2; bx <= -corrW/2 - 2; bx += 2.5) {
-            for(let bz = 40 - 2; bz <= 40 + 2; bz += 2.5) {
-                addWall(bx, FLOOR_2_Y + 0.4, bz, 1.2, 0.8, 0.8, woodMat);
+        // --- COLLISIONI E LOS ---
+        function checkCollision(pos, oldPos, radius) {
+            let boxes = [...wallBoxes];
+            doors.forEach(d => { let bounds = d.getBounds(); if(bounds) boxes.push(bounds); });
+            for (let b of boxes) {
+                if (pos.x > b.minX - radius && pos.x < b.maxX + radius && pos.z > b.minZ - radius && pos.z < b.maxZ + radius) {
+                    if (oldPos.x <= b.minX - radius || oldPos.x >= b.maxX + radius) pos.x = oldPos.x;
+                    if (oldPos.z <= b.minZ - radius || oldPos.z >= b.maxZ + radius) pos.z = oldPos.z;
+                }
             }
         }
 
-        // Armadietti P2
-        lockers.push(new Locker(corrW/2 - 0.5, FLOOR_2_Y, 30, -1));
-        lockers.push(new Locker(corrW/2 - 0.5, FLOOR_2_Y, 31, -1));
-        lockers.push(new Locker(0, FLOOR_2_Y, 59.5, 2)); // In fondo al corridoio, guarda a nord
+        const losRaycaster = new THREE.Raycaster();
+        function checkLineOfSight(posA, posB) {
+            const dir = new THREE.Vector3().subVectors(posB, posA);
+            const dist = dir.length(); dir.normalize();
+            losRaycaster.set(posA, dir);
+            const blockObjects = scene.children.filter(c => c.geometry && c.geometry.type === 'BoxGeometry' && !(c.userData.type === "door" && c.userData.obj.isOpen));
+            const hits = losRaycaster.intersectObjects(blockObjects);
+            return !(hits.length > 0 && hits[0].distance < dist - 1.0);
+        }
 
         // --- SISTEMA STEALTH ---
         function enterLocker(lockerObj) {
             if (isHiding) return;
             isHiding = true; currentLocker = lockerObj;
-            
             const camPos = controls.getObject().position;
-            camPos.set(lockerObj.mesh.position.x, lockerObj.mesh.position.y, lockerObj.mesh.position.z);
-            
+            camPos.copy(lockerObj.mesh.position); camPos.y = 5;
             lockerOverlay.style.display = 'block'; interactPrompt.innerText = "[ E ] Esci dall'armadietto";
             
             enemies.forEach(e => {
@@ -493,93 +497,39 @@
             if (forced) { takeDamage(); bustedText.style.display = 'block'; setTimeout(() => bustedText.style.display = 'none', 1500); }
         }
 
-        // --- COLLISIONI (Nuovo Sistema 3D & Gravità) ---
-        const raycasterFloor = new THREE.Raycaster();
-        
-        function getFloorY(pos) {
-            // Lancia un raggio verso il basso partendo da un po' più in alto del giocatore
-            raycasterFloor.set(new THREE.Vector3(pos.x, pos.y + 1, pos.z), new THREE.Vector3(0, -1, 0));
-            const hits = raycasterFloor.intersectObjects(floors);
-            if (hits.length > 0) return hits[0].point.y;
-            return -100; // Caduta libera se fuori mappa
-        }
-
-        function checkHorizontalCollision(newPos, oldPos) {
-            let collision = false;
-            const radius = 0.3; // Raggio cilindro giocatore
-            const height = PLAYER_HEIGHT;
-            const py = oldPos.y - height + 0.1; // Base dei piedi (leggermente rialzata per ignorare i piccoli gradini)
-            
-            let boxes = [...wallBoxes];
-            doors.forEach(d => { let bounds = d.getBounds(); if(bounds) boxes.push(bounds); });
-            
-            for (let b of boxes) {
-                // Controllo intersezione in altezza
-                if (oldPos.y > b.minY && py < b.maxY) {
-                    // Controllo intersezione X/Z
-                    if (newPos.x + radius > b.minX && newPos.x - radius < b.maxX && 
-                        newPos.z + radius > b.minZ && newPos.z - radius < b.maxZ) {
-                        
-                        // Determina quale asse revertare
-                        if (oldPos.x + radius <= b.minX || oldPos.x - radius >= b.maxX) newPos.x = oldPos.x;
-                        if (oldPos.z + radius <= b.minZ || oldPos.z - radius >= b.maxZ) newPos.z = oldPos.z;
-                        collision = true;
-                    }
-                }
-            }
-            return collision;
-        }
-
-        const losRaycaster = new THREE.Raycaster();
-        function checkLineOfSight(posA, posB) {
-            const dir = new THREE.Vector3().subVectors(posB, posA);
-            const dist = dir.length(); dir.normalize();
-            losRaycaster.set(posA, dir);
-            
-            // Controlla solo contro muri e porte chiuse (oggetti BoxGeometry opachi)
-            const blockObjects = scene.children.filter(c => c.geometry && c.geometry.type === 'BoxGeometry' && c.material !== stairMat && !(c.userData.type === "door" && c.userData.obj.isOpen));
-            const hits = losRaycaster.intersectObjects(blockObjects);
-            return !(hits.length > 0 && hits[0].distance < dist - 0.5);
-        }
-
-        // --- ENTITÀ (Mostro Aggiornato) ---
+        // --- ENTITÀ ---
         const texLoader = new THREE.TextureLoader();
+        texLoader.setCrossOrigin('anonymous'); // Evita errori CORS per le immagini caricate da url esterni
         const monsterMat = new THREE.SpriteMaterial({ map: texLoader.load(MONSTER_IMG_URL), color: 0xffffff });
         
         let enemies = [], enemyProjectiles = [], particles = [];
 
         function getValidSpawnPoint(minDistFromPlayer = 0) {
-            let spawnX, spawnZ, spawnY, valid = false, attempts = 0;
+            let spawnX, spawnZ, valid = false, attempts = 0;
             const camPos = controls.getObject().position;
             while (!valid && attempts < 100) {
                 const zone = validZones[Math.floor(Math.random() * validZones.length)];
                 spawnX = zone.minX + Math.random() * (zone.maxX - zone.minX);
                 spawnZ = zone.minZ + Math.random() * (zone.maxZ - zone.minZ);
-                spawnY = zone.y + 1; // Centro del mostro
                 valid = true;
-                
-                // Evita spawn troppo vicini al giocatore (incluso l'asse Y per i piani)
-                const dist3D = Math.sqrt(Math.pow(spawnX - camPos.x, 2) + Math.pow(spawnY - camPos.y, 2) + Math.pow(spawnZ - camPos.z, 2));
-                if (dist3D < minDistFromPlayer) { valid = false; continue; }
+                if (Math.sqrt(Math.pow(spawnX - camPos.x, 2) + Math.pow(spawnZ - camPos.z, 2)) < minDistFromPlayer) { valid = false; continue; }
                 attempts++;
             }
-            return new THREE.Vector3(spawnX, spawnY, spawnZ);
+            return new THREE.Vector3(spawnX, 2, spawnZ);
         }
 
         class Monster {
             constructor() {
                 this.mesh = new THREE.Sprite(monsterMat);
-                // Proporzioni umane per l'immagine
-                this.mesh.scale.set(1.5, 1.8, 1); 
-                this.mesh.position.copy(getValidSpawnPoint(15));
+                this.mesh.scale.set(4.5, 4.5, 1); // Leggermente più grande
+                this.mesh.position.copy(getValidSpawnPoint(30));
                 scene.add(this.mesh);
                 
-                this.speed = 3.5 + (score * 0.2); // Più realistico
+                this.speed = 14 + (score * 1.5);
                 this.lastShot = performance.now();
-                this.shootCooldown = Math.max(800, 2000 - (score * 100));
+                this.shootCooldown = Math.max(700, 2000 - (score * 150));
                 this.sawPlayerHide = false;
                 this.targetLocker = null;
-                this.velocityY = 0;
             }
 
             update(dt, playerPos) {
@@ -587,58 +537,41 @@
                     if (this.sawPlayerHide && this.targetLocker === currentLocker) {
                         const dirToLocker = new THREE.Vector3().subVectors(this.targetLocker.mesh.position, this.mesh.position);
                         dirToLocker.y = 0;
-                        if (dirToLocker.length() < 1.5) { exitLocker(true); this.sawPlayerHide = false; }
+                        if (dirToLocker.length() < 5.0) { exitLocker(true); this.sawPlayerHide = false; }
                         else {
                             dirToLocker.normalize(); const oldPos = this.mesh.position.clone();
-                            this.mesh.position.addScaledVector(dirToLocker, this.speed * dt); 
-                            checkHorizontalCollision(this.mesh.position, oldPos);
+                            this.mesh.position.addScaledVector(dirToLocker, this.speed * dt); checkCollision(this.mesh.position, oldPos, 1.5);
                         }
-                    } 
-                } else {
-                    this.sawPlayerHide = false;
-                    const dirToPlayer = new THREE.Vector3().subVectors(playerPos, this.mesh.position);
-                    const distance = dirToPlayer.length(); 
-                    
-                    // Appiattisce la direzione per il movimento orizzontale
-                    const moveDir = new THREE.Vector3(dirToPlayer.x, 0, dirToPlayer.z).normalize();
+                    } return;
+                }
+                
+                this.sawPlayerHide = false;
+                const dirToPlayer = new THREE.Vector3().subVectors(playerPos, this.mesh.position);
+                dirToPlayer.y = 0; const distance = dirToPlayer.length(); dirToPlayer.normalize();
 
-                    if (distance > 2) {
-                        const oldPos = this.mesh.position.clone();
-                        this.mesh.position.addScaledVector(moveDir, this.speed * dt);
-                        checkHorizontalCollision(this.mesh.position, oldPos);
-                    }
-
-                    if (distance < 20 && performance.now() - this.lastShot > this.shootCooldown) {
-                        // Spara verso il centro del giocatore
-                        const aimDir = new THREE.Vector3().subVectors(new THREE.Vector3(playerPos.x, playerPos.y - 0.5, playerPos.z), this.mesh.position).normalize();
-                        if(checkLineOfSight(this.mesh.position, playerPos)) { this.fire(aimDir); this.lastShot = performance.now(); }
-                    }
+                if (distance > 8) {
+                    const oldPos = this.mesh.position.clone();
+                    this.mesh.position.addScaledVector(dirToPlayer, this.speed * dt);
+                    checkCollision(this.mesh.position, oldPos, 1.5);
                 }
 
-                // Gravità mostro
-                this.velocityY -= 20.0 * dt;
-                this.mesh.position.y += this.velocityY * dt;
-                
-                // Base del mostro è Y - 0.9 (metà altezza)
-                const groundY = getFloorY(this.mesh.position);
-                if (this.mesh.position.y - 0.9 < groundY) {
-                    this.mesh.position.y = groundY + 0.9;
-                    this.velocityY = 0;
+                if (distance < 50 && performance.now() - this.lastShot > this.shootCooldown) {
+                    if(checkLineOfSight(this.mesh.position, playerPos)) { this.fire(dirToPlayer); this.lastShot = performance.now(); }
                 }
             }
 
             fire(direction) {
-                const p = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
-                p.position.copy(this.mesh.position); p.userData = { velocity: direction.clone().multiplyScalar(15), life: 2.0 };
+                const p = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+                p.position.copy(this.mesh.position); p.userData = { velocity: direction.clone().multiplyScalar(20), life: 3.0 };
                 scene.add(p); enemyProjectiles.push(p);
             }
 
             destroy() {
                 scene.remove(this.mesh);
-                for(let i=0; i<10; i++) {
-                    const p = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.1), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+                for(let i=0; i<15; i++) {
+                    const p = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.2, 0.2), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
                     p.position.copy(this.mesh.position);
-                    p.userData = { vel: new THREE.Vector3((Math.random()-.5)*5, Math.random()*5, (Math.random()-.5)*5), life: 1.0 };
+                    p.userData = { vel: new THREE.Vector3((Math.random()-.5)*15, (Math.random()-.5)*15, (Math.random()-.5)*15), life: 1.0 };
                     scene.add(p); particles.push(p);
                 }
             }
@@ -652,7 +585,7 @@
 
             raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
             const hits = raycaster.intersectObjects([...doors.map(d=>d.mesh), ...lockers.map(l=>l.mesh)]);
-            if (hits.length > 0 && hits[0].distance < 3) { // Distanza realistica
+            if (hits.length > 0 && hits[0].distance < 12) {
                 const obj = hits[0].object.userData;
                 if(obj.type === "door") obj.obj.toggle();
                 else if (obj.type === "locker") enterLocker(obj.obj);
@@ -664,16 +597,13 @@
             flashShoot.style.opacity = '0.3'; setTimeout(() => flashShoot.style.opacity = '0', 50);
 
             raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-            
-            // Trova primo muro colpito
-            const wallHits = raycaster.intersectObjects(scene.children.filter(c => c.geometry && c.geometry.type === 'BoxGeometry' && c.material !== stairMat));
+            const wallHits = raycaster.intersectObjects(scene.children.filter(c => c.geometry && c.geometry.type === 'BoxGeometry'));
             let wallDist = Infinity;
             for(let hit of wallHits) {
                 if(hit.object.userData.type === "door" && hit.object.userData.obj.isOpen) continue;
                 wallDist = hit.distance; break;
             }
 
-            // Trova mostro colpito
             const hitMonsters = raycaster.intersectObjects(enemies.map(e => e.mesh));
             if (hitMonsters.length > 0 && hitMonsters[0].distance < wallDist) {
                 const idx = enemies.findIndex(e => e.mesh === hitMonsters[0].object);
@@ -694,19 +624,17 @@
         // --- GAME LOOP ---
         let prevTime = performance.now();
         let lastMonsterSpawn = 0;
-        let playerVelocityY = 0;
 
         function animate() {
             requestAnimationFrame(animate);
-            const time = performance.now(); const dt = Math.min((time - prevTime) / 1000, 0.1); prevTime = time;
+            const time = performance.now(); const dt = (time - prevTime) / 1000; prevTime = time;
 
             if (controls.isLocked && gameActive) {
-                // UI Interazione
                 raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
                 const uiHits = raycaster.intersectObjects([...doors.map(d=>d.mesh), ...lockers.map(l=>l.mesh)]);
                 
                 if(!isHiding) {
-                    if(uiHits.length > 0 && uiHits[0].distance < 3) {
+                    if(uiHits.length > 0 && uiHits[0].distance < 12) {
                         interactPrompt.style.display = 'block';
                         interactPrompt.innerText = uiHits[0].object.userData.type === "locker" ? "[ E ] Nasconditi nell'Armadietto" : "[ E ] Apri/Chiudi Porta";
                     } else interactPrompt.style.display = 'none';
@@ -714,52 +642,24 @@
 
                 doors.forEach(d => d.update(dt));
 
-                // MOVIMENTO E GRAVITÀ GIOCATORE
                 if (!isHiding) {
-                    velocity.x -= velocity.x * 10.0 * dt; 
-                    velocity.z -= velocity.z * 10.0 * dt;
-                    
-                    direction.z = Number(moveForward) - Number(moveBackward); 
-                    direction.x = Number(moveRight) - Number(moveLeft);
+                    velocity.x -= velocity.x * 10.0 * dt; velocity.z -= velocity.z * 10.0 * dt;
+                    direction.z = Number(moveForward) - Number(moveBackward); direction.x = Number(moveRight) - Number(moveLeft);
                     direction.normalize();
-                    
-                    const speedMultiplier = 40.0; // Velocità proporzionata
+                    const speedMultiplier = 130.0;
                     if (moveForward || moveBackward) velocity.z -= direction.z * speedMultiplier * dt;
                     if (moveLeft || moveRight) velocity.x -= direction.x * speedMultiplier * dt;
 
-                    const camPos = controls.getObject().position; 
-                    const oldPos = camPos.clone();
-                    
-                    // Movimento orizzontale
-                    controls.moveRight(-velocity.x * dt); 
-                    controls.moveForward(-velocity.z * dt);
-                    checkHorizontalCollision(camPos, oldPos);
-
-                    // Gravità e Scale
-                    playerVelocityY -= 30.0 * dt; // Forza di gravità
-                    camPos.y += playerVelocityY * dt;
-                    
-                    const groundY = getFloorY(camPos);
-                    
-                    // Se i piedi (camPos.y - PLAYER_HEIGHT) scendono sotto il pavimento
-                    if (camPos.y - PLAYER_HEIGHT < groundY) {
-                        // Ci appoggiamo dolcemente sul pavimento o saliamo il gradino/rampa
-                        camPos.y = groundY + PLAYER_HEIGHT;
-                        playerVelocityY = 0;
-                        
-                        // Sistema "Salita scale": se stiamo camminando in avanti su una rampa, 
-                        // la posizione Y viene spinta in su fluidamente
-                    }
-                    
-                    // Kill-Z se si cade nel vuoto (anti-glitch)
-                    if (camPos.y < -10) takeDamage();
+                    const camPos = controls.getObject().position; const oldPos = camPos.clone();
+                    controls.moveRight(-velocity.x * dt); controls.moveForward(-velocity.z * dt);
+                    checkCollision(camPos, oldPos, 1.5);
                 }
 
                 const camPos = controls.getObject().position;
 
-                // Spawn Nemici
-                const maxEnemies = Math.min(12, 3 + Math.floor(score / 4)); // Meno mostri contemporaneamente ma letali
-                const spawnDelay = Math.max(2000 - (score * 50), 800);
+                // Spawn molto più veloce e frequente
+                const maxEnemies = Math.min(20, 5 + Math.floor(score / 3));
+                const spawnDelay = Math.max(1000 - (score * 20), 400); // Scende fino a 0.4s
                 if (enemies.length < maxEnemies && time - lastMonsterSpawn > spawnDelay) {
                     enemies.push(new Monster());
                     lastMonsterSpawn = time;
@@ -767,28 +667,22 @@
 
                 enemies.forEach(e => e.update(dt, camPos));
 
-                // Proiettili e Particelle (Aggiornati con collisione 3D)
                 for (let i = enemyProjectiles.length - 1; i >= 0; i--) {
                     let p = enemyProjectiles[i]; p.position.addScaledVector(p.userData.velocity, dt); p.userData.life -= dt;
-                    
                     let hitWall = false;
                     let boxes = [...wallBoxes]; doors.forEach(d => { let b = d.getBounds(); if(b) boxes.push(b); });
-                    for (let b of boxes) { 
-                        if (p.position.x > b.minX && p.position.x < b.maxX && 
-                            p.position.y > b.minY && p.position.y < b.maxY && 
-                            p.position.z > b.minZ && p.position.z < b.maxZ) { hitWall = true; break; } 
-                    }
+                    for (let b of boxes) { if (p.position.x > b.minX && p.position.x < b.maxX && p.position.z > b.minZ && p.position.z < b.maxZ) { hitWall = true; break; } }
                     
-                    if (hitWall || getFloorY(p.position) > p.position.y) { scene.remove(p); enemyProjectiles.splice(i, 1); continue; }
-                    if (!isHiding && p.position.distanceTo(camPos) < 1.0) { takeDamage(); scene.remove(p); enemyProjectiles.splice(i, 1); continue; }
+                    if (hitWall) { scene.remove(p); enemyProjectiles.splice(i, 1); continue; }
+                    if (!isHiding && p.position.distanceTo(camPos) < 2.0) { takeDamage(); scene.remove(p); enemyProjectiles.splice(i, 1); continue; }
                     if (p.userData.life <= 0) { scene.remove(p); enemyProjectiles.splice(i, 1); }
                 }
 
                 for (let i = particles.length - 1; i >= 0; i--) {
                     let p = particles[i]; p.position.addScaledVector(p.userData.vel, dt);
-                    p.userData.vel.y -= 15 * dt; p.userData.life -= dt * 2;
+                    p.userData.vel.y -= 20 * dt; p.userData.life -= dt * 2;
                     p.material.opacity = Math.max(0, p.userData.life); p.material.transparent = true;
-                    if (p.userData.life <= 0 || p.position.y < getFloorY(p.position)) { scene.remove(p); p.material.dispose(); particles.splice(i, 1); }
+                    if (p.userData.life <= 0 || p.position.y < 0) { scene.remove(p); p.material.dispose(); particles.splice(i, 1); }
                 }
             }
             renderer.render(scene, camera);
