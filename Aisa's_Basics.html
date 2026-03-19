@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aisa's Basics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Courier New', Courier, monospace;
+            user-select: none;
+        }
+        #game-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(3px);
+            transition: opacity 0.3s;
+        }
+        .modal {
+            background: white;
+            border: 4px solid black;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 10px 10px 0px rgba(0,0,0,0.8);
+            pointer-events: auto;
+        }
+        .answer-btn {
+            display: block;
+            width: 100%;
+            margin: 10px 0;
+            padding: 15px;
+            background: #eee;
+            border: 2px solid #333;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .answer-btn:hover {
+            background: #ccc;
+            transform: scale(1.02);
+        }
+        #hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #ffeb3b;
+            font-size: 28px;
+            text-shadow: 3px 3px 0 #000;
+            font-weight: bold;
+            z-index: 5;
+            pointer-events: none;
+        }
+        
+        #stamina-container {
+            position: absolute;
+            bottom: 30px;
+            left: 20px;
+            width: 300px;
+            height: 25px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 3px solid #fff;
+            z-index: 5;
+            pointer-events: none;
+            box-shadow: 2px 2px 0px #000;
+        }
+        #stamina-bar {
+            width: 100%;
+            height: 100%;
+            background: #00ff00;
+            transition: width 0.1s linear, background-color 0.3s;
+        }
+        #pause-hint {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: #ffffff;
+            font-size: 18px;
+            text-shadow: 2px 2px 0 #000;
+            font-weight: bold;
+            z-index: 5;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        #map-hint {
+            position: absolute;
+            top: 50px;
+            right: 20px;
+            color: #ffffff;
+            font-size: 18px;
+            text-shadow: 2px 2px 0 #000;
+            font-weight: bold;
+            z-index: 5;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        
+        #map-canvas {
+            background-color: #111;
+            border: 4px solid #333;
+            border-radius: 8px;
+            margin: 0 auto;
+            display: block;
+            box-shadow: inset 0 0 20px rgba(0,0,0,1);
+        }
+
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        #jumpscare-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 100;
+            background: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #jumpscare-overlay img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            animation: extreme-shake 0.05s infinite;
+            filter: contrast(2) brightness(1.5) saturate(2) hue-rotate(-20deg);
+        }
+        @keyframes extreme-shake {
+            0% { transform: translate(15px, 15px) scale(1.1); }
+            25% { transform: translate(-15px, -25px) scale(1.1); }
+            50% { transform: translate(-25px, 15px) scale(1.2); }
+            75% { transform: translate(25px, -15px) scale(1.1); }
+            100% { transform: translate(-15px, 25px) scale(1.2); }
+        }
+
+        .crt::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 20;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+        .hidden-ui {
+            display: none !important;
+        }
+    </style>
+</head>
+<body class="crt">
+
+    <div id="game-container"></div>
+    <div id="hud">Quaderni: 0/15</div>
+    
+    <div id="stamina-container">
+        <div id="stamina-bar"></div>
+    </div>
+    <div id="pause-hint">Premi ESC per Pausa</div>
+    <div id="map-hint">Premi TAB per la Mappa</div>
+
+    <div id="crosshair"></div>
+
+    <div id="jumpscare-overlay" class="hidden-ui">
+        <img src="https://lh3.googleusercontent.com/a-/ALV-UjX5WaAKPyFOdPE72EV2dbV2IvSo1Xbdv12mYFqvBUM9gWaaMoRU=s75-c" alt="Jumpscare">
+    </div>
+
+    <div id="ui-layer">
+        <!-- Start Menu -->
+        <div id="start-screen" class="modal">
+            <h1 class="text-4xl font-bold mb-4 text-red-800">Aisa's Basics</h1>
+            <p class="mb-4 text-lg">Raccogli i 15 quaderni sparsi per la scuola. Rispondi alle domande di Letteratura Italiana.</p>
+            <p class="mb-4 text-red-600 font-bold">ATTENZIONE: Finché rispondi correttamente, sarai al sicuro. Al primo errore, la Prof.ssa Aisa inizierà a cercarti!</p>
+            <p class="mb-4 text-sm text-gray-700 font-bold">Comandi: MOUSE per guardarti intorno, WASD per muoverti, SHIFT per correre.</p>
+            
+            <div class="mb-8 mt-4 border-t-2 border-b-2 py-4">
+                <h3 class="text-xl font-bold mb-3">Seleziona Difficoltà:</h3>
+                <div class="flex justify-center flex-wrap gap-4">
+                    <label class="cursor-pointer flex items-center bg-green-200 px-4 py-2 border-2 border-green-800 rounded hover:bg-green-300">
+                        <input type="radio" name="difficulty" value="easy" class="mr-2" checked>
+                        <span class="font-bold text-green-900">Facile</span>
+                    </label>
+                    <label class="cursor-pointer flex items-center bg-yellow-200 px-4 py-2 border-2 border-yellow-800 rounded hover:bg-yellow-300">
+                        <input type="radio" name="difficulty" value="normal" class="mr-2">
+                        <span class="font-bold text-yellow-900">Normale</span>
+                    </label>
+                    <label class="cursor-pointer flex items-center bg-red-200 px-4 py-2 border-2 border-red-800 rounded hover:bg-red-300">
+                        <input type="radio" name="difficulty" value="hard" class="mr-2">
+                        <span class="font-bold text-red-900">Difficile</span>
+                    </label>
+                    <label class="cursor-pointer flex items-center bg-purple-200 px-4 py-2 border-2 border-purple-800 rounded hover:bg-purple-300">
+                        <input type="radio" name="difficulty" value="aisa" class="mr-2">
+                        <span class="font-bold text-purple-900">AISA</span>
+                    </label>
+                </div>
+            </div>
+
+            <button id="start-btn" class="bg-red-700 hover:bg-red-900 text-white font-bold py-3 px-8 rounded border-4 border-black text-xl shadow-[0_0_15px_rgba(255,0,0,0.6)] transition-all transform hover:scale-105">CLICCA PER INIZIARE</button>
+        </div>
+
+        <!-- Resume Menu -->
+        <div id="resume-screen" class="modal hidden-ui">
+            <h1 class="text-3xl font-bold mb-4">Pausa</h1>
+            <p class="mb-6 text-lg">Cosa vuoi fare?</p>
+            <div class="flex flex-col gap-4 items-center">
+                <button id="resume-btn" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 px-8 rounded border-4 border-black text-xl w-full">RIPRENDI</button>
+                <button onclick="location.reload()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-8 rounded border-4 border-black text-xl w-full">TORNA AL MENÙ PRINCIPALE</button>
+            </div>
+        </div>
+
+        <!-- Map Menu -->
+        <div id="map-screen" class="modal hidden-ui" style="max-width: 500px;">
+            <h2 class="text-3xl font-bold mb-2 text-blue-800">Mappa della Scuola</h2>
+            <p class="mb-4 text-sm font-bold">Punto Blu: Tu | Giallo: Quaderni | <span class="text-red-600">Rosso: Pericolo Attivo</span></p>
+            <canvas id="map-canvas" width="400" height="400"></canvas>
+            <button id="close-map-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded mt-4 border-2 border-black">Chiudi Mappa (TAB)</button>
+        </div>
+
+        <!-- Question UI -->
+        <div id="question-screen" class="modal hidden-ui">
+            <h2 id="question-title" class="text-2xl font-bold mb-2 text-blue-700">Quaderno Trovato!</h2>
+            <p id="question-text" class="mb-4 text-lg text-left font-bold border-b-2 pb-2"></p>
+            <div id="answers-container">
+                <!-- Buttons injected here -->
+            </div>
+        </div>
+
+        <!-- Game Over UI -->
+        <div id="gameover-screen" class="modal hidden-ui bg-black text-red-600 border-red-800 border-8" style="box-shadow: 0 0 50px rgba(255,0,0,0.5);">
+            <h1 class="text-7xl font-extrabold mb-4 text-red-600 animate-pulse">HAI PERSO</h1>
+            <img src="https://lh3.googleusercontent.com/a-/ALV-UjX5WaAKPyFOdPE72EV2dbV2IvSo1Xbdv12mYFqvBUM9gWaaMoRU=s75-c" alt="Aisa" class="mx-auto mb-6 w-48 h-48 object-cover rounded-full border-4 border-red-800 grayscale">
+            <p class="mb-8 text-2xl text-gray-300">La Prof.ssa Aisa ti ha catturato.<br>La tua preparazione in Letteratura è insufficiente.</p>
+            <button onclick="location.reload()" class="bg-red-700 hover:bg-red-900 text-white font-bold py-4 px-10 rounded text-2xl border-2 border-red-500 shadow-[0_0_15px_rgba(255,0,0,0.6)] transition-all transform hover:scale-110 cursor-pointer pointer-events-auto">RIPROVA</button>
+        </div>
+
+        <!-- Win UI -->
+        <div id="win-screen" class="modal hidden-ui bg-green-200 border-green-800">
+            <h1 class="text-5xl font-bold mb-4 text-green-800">PROMOSSO!</h1>
+            <p class="mb-4 text-2xl">Hai raccolto tutti i quaderni e dimostrato una conoscenza maniacale degli appunti!</p>
+            <button onclick="location.reload()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded mt-4 text-xl">Gioca Ancora</button>
+        </div>
+    </div>
+
+<script>
+    // --- UI Elements ---
+    const uiLayer = document.getElementById('ui-layer');
+    const screens = {
+        start: document.getElementById('start-screen'),
+        resume: document.getElementById('resume-screen'),
+        map: document.getElementById('map-screen'),
+        question: document.getElementById('question-screen'),
+        gameover: document.getElementById('gameover-screen'),
+        win: document.getElementById('win-screen')
+    };
+    const questionText = document.getElementById('question-text');
+    const answersContainer = document.getElementById('answers-container');
+    const hud = document.getElementById('hud');
+
+    // --- Game Variables ---
+    let gameState = 'start'; // start, playing, paused, question, gameover, win, jumpscare
+    let collectedNotebooks = 0;
+    let wrongAnswers = 0;
+    const totalNotebooks = 15;
+    let currentNotebookMesh = null;
+    let currentQuestionIndex = 0;
+
+    // --- Audio Synthesizer for Jumpscare ---
+    function playScreech() {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.type = 'sawtooth';
+            oscillator.frequency.setValueAtTime(150, audioCtx.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(1500, audioCtx.currentTime + 0.1);
+            oscillator.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 1.5);
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(1, audioCtx.currentTime + 0.05);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.5);
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 1.5);
+        } catch(e) { console.error("Audio API non supportata", e); }
+    }
+
+    function triggerJumpscare() {
+        if (gameState === 'jumpscare' || gameState === 'gameover') return;
+        gameState = 'jumpscare';
+        document.exitPointerLock();
+        const overlay = document.getElementById('jumpscare-overlay');
+        overlay.classList.remove('hidden-ui');
+        playScreech();
+        setTimeout(() => {
+            overlay.classList.add('hidden-ui');
+            triggerGameOver();
+        }, 1500);
+    }
+
+    // --- Questions Pool ---
+    const questionsPool = [
+        { q: "Domanda Facile: In quale città è nato Giuseppe Parini?", options: ["Milano", "Roma", "Bosisio", "Firenze"], correct: 2 },
+        { q: "Secondo le tue note sul Cicisbeo, in quale occasione specifica una dama 'poteva scegliere il suo cicisbeo' e rendere pubblica la figura?", options: ["Quando entrava in Arcadia", "Al compimento del diciottesimo anno", "Quando si sposava", "Alla morte del primo figlio"], correct: 2 },
+        { q: "Quale figura retorica utilizza Parini per fingere di accettare il punto di vista del giovin signore, dicendo l'esatto contrario di ciò che pensa in maniera esagerata?", options: ["Antifrasi", "Ipallage", "Litote", "Sineddoche"], correct: 0 },
+        { q: "Nel brano 'La Vergine Cuccia', con quale esatto epiteto viene definita la cagnetta per indicare che è stata generata da divinità?", options: ["Creatura celestiale", "Delle grazie alunna", "Vergine divina", "Sacrilega bestiola"], correct: 1 },
+        { q: "Vittorio Alfieri anticipa un sentimento di ricerca dell'infinito chiamato 'Sehnsucht'. Qual è la radice del verbo tedesco da cui deriva questo termine e cosa significa?", options: ["Sehen (Vedere)", "Suchen (Cercare)", "Sehnen (Desiderare)", "Sucht (Dipendenza)"], correct: 1 },
+        { q: "Durante la rivoluzione francese, Alfieri subisce delle perquisizioni a Parigi. Gli confiscano una cassa di libri e la sua autobiografia. Esattamente quante pagine aveva questa autobiografia?", options: ["150 pagine", "200 pagine", "300 pagine", "500 pagine"], correct: 2 },
+        { q: "Ne 'Il Giorno', il precettore consiglia la colazione al giovin signore. Se il signore 'si sente triste', quale bevanda dovrebbe scegliere?", options: ["Il Caffè", "Il Tè nero", "La Cioccolata", "L'infuso d'erbe"], correct: 2 },
+        { q: "Di quale prestigiosa accademia milanese, aperta sia ai nobili che ai borghesi, Parini divenne un membro di spicco a partire dal 1753?", options: ["Accademia dell'Arcadia", "Accademia dei Trasformati", "Accademia dei Pugni", "Accademia della Crusca"], correct: 1 },
+        { q: "A chi o a cosa è ironicamente dedicata la prima edizione de 'Il Mattino' (1763) di Giuseppe Parini?", options: ["A un giovane signore anonimo", "Alla Ragione illuminista", "Alla Moda, descritta come una dea", "A Maria Teresa d'Austria"], correct: 2 },
+        { q: "Quale fu la prima tragedia in assoluto scritta da Vittorio Alfieri (1775), il cui inaspettato successo teatrale lo spinse a dedicarsi alla letteratura?", options: ["Filippo", "Saul", "Mirra", "Cleopatra"], correct: 3 },
+        { q: "Nella tragedia 'Saul' di Alfieri, quale personaggio rappresenta l'autorità sacerdotale inflessibile e la condanna divina che tormenta la psiche del re?", options: ["Samuele", "David", "Gionata", "Abner"], correct: 0 },
+        { q: "Nella tragedia 'Mirra' di Alfieri, qual è la terribile e inconfessabile colpa che divora la protagonista spingendola fino al suicidio?", options: ["L'odio profondo e segreto verso la madre", "L'aver tradito la sua patria per amore", "L'amore incestuoso per il padre Ciniro", "L'aver rinnegato gli dei dell'Olimpo"], correct: 2 },
+        { q: "Nel trattato 'Della Tirannide', Alfieri sostiene che il tiranno è accomunato ai suoi sudditi oppressi da un sentimento predominante. Quale?", options: ["La noia esistenziale", "La paura costante", "La profonda solitudine", "L'invidia verso la virtù"], correct: 1 },
+        { q: "Quale opera dello scozzese James Macpherson, magistralmente tradotta in endecasillabi sciolti da Melchiorre Cesarotti, divenne il manifesto del Preromanticismo europeo?", options: ["I dolori del giovane Werther", "Le Notti o Pensieri notturni", "Elegia scritta in un cimitero campestre", "I Canti di Ossian"], correct: 3 },
+        { q: "Quale tematica fondamentale viene introdotta nel Preromanticismo dalla 'Poesia Sepolcrale' di autori anglosassoni come Thomas Gray ed Edward Young?", options: ["La meditazione sulla morte e l'illusorietà della gloria terrena", "L'esaltazione della natura selvaggia e indomabile", "Il rifiuto del cristianesimo a favore di un panteismo mistico", "La ribellione politica violenta contro l'assolutismo"], correct: 0 }
+    ];
+
+    // --- Three.js Setup ---
+    const container = document.getElementById('game-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x050505);
+    scene.fog = new THREE.Fog(0x050505, 10, 80);
+
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: false });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    container.appendChild(renderer.domElement);
+
+    const ambientLight = new THREE.AmbientLight(0x555555);
+    scene.add(ambientLight);
+
+    const flashlight = new THREE.SpotLight(0xffffff, 1.5, 80, Math.PI / 5, 0.3, 1);
+    camera.add(flashlight);
+    flashlight.target.position.set(0, 0, -1);
+    camera.add(flashlight.target);
+    scene.add(camera);
+
+    // --- Procedural Textures ---
+    function createFloorTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 128; canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#e0e0e0'; ctx.fillRect(0,0,128,128);
+        ctx.fillStyle = '#b0b0b0'; 
+        ctx.fillRect(0,0,64,64); ctx.fillRect(64,64,64,64);
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+        tex.magFilter = THREE.NearestFilter;
+        return tex;
+    }
+
+    function createWallTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 128; canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#f4f4f0'; ctx.fillRect(0,0,128, 64);
+        ctx.fillStyle = '#5c4033'; ctx.fillRect(0,64,128, 8);
+        ctx.fillStyle = '#4a7060'; ctx.fillRect(0,72,128, 56);
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.magFilter = THREE.NearestFilter;
+        return tex;
+    }
+
+    function createLockerTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 128; canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#607080'; ctx.fillRect(0,0,128,128);
+        for(let i=0; i<4; i++) {
+            let x = i * 32;
+            ctx.strokeStyle = '#405060'; ctx.lineWidth = 2;
+            ctx.strokeRect(x+2, 10, 28, 108);
+            ctx.fillStyle = '#222';
+            ctx.fillRect(x+22, 60, 4, 12);
+            ctx.fillRect(x+6, 16, 20, 4);
+            ctx.fillRect(x+6, 24, 20, 4);
+        }
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.magFilter = THREE.NearestFilter;
+        return tex;
+    }
+
+    function createCeilingTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 64; canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#dddddd'; ctx.fillRect(0,0,64,64);
+        ctx.strokeStyle = '#999999'; ctx.lineWidth = 2;
+        ctx.strokeRect(0,0,64,64);
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+        tex.magFilter = THREE.NearestFilter;
+        return tex;
+    }
+
+    const floorTex = createFloorTexture();
+    const ceilingTex = createCeilingTexture();
+    const wallMaterial = new THREE.MeshLambertMaterial({ map: createWallTexture() });
+    const lockerMaterial = new THREE.MeshLambertMaterial({ map: createLockerTexture() });
+    const floorMaterial = new THREE.MeshLambertMaterial({ map: floorTex });
+    const ceilingMaterial = new THREE.MeshLambertMaterial({ map: ceilingTex });
+    const notebookMaterial = new THREE.MeshLambertMaterial({ color: 0xffd700 });
+
+    const textureLoader = new THREE.TextureLoader();
+    textureLoader.setCrossOrigin('anonymous');
+    const aisaTexture = textureLoader.load('https://lh3.googleusercontent.com/a-/ALV-UjX5WaAKPyFOdPE72EV2dbV2IvSo1Xbdv12mYFqvBUM9gWaaMoRU=s75-c');
+    const aisaMat = new THREE.SpriteMaterial({ map: aisaTexture, color: 0xffffff });
+    const aisaSprite = new THREE.Sprite(aisaMat);
+    aisaSprite.scale.set(8, 8, 1);
+    aisaSprite.position.set(0, 4, -80);
+    scene.add(aisaSprite);
+
+    const aisa = { active: false, baseSpeed: 0.05, currentSpeed: 0, mesh: aisaSprite };
+    let speedMultiplier = 0.05;
+
+    const tileSize = 10;
+    const mapSize = 26;
+    const gridCells = mapSize + 1;
+    const pathGrid = Array(gridCells).fill(null).map(() => Array(gridCells).fill(0));
+    const distanceMap = Array(gridCells).fill(null).map(() => Array(gridCells).fill(9999));
+
+    const walls = [];
+    const notebooks = [];
+    const wallGeometry = new THREE.BoxGeometry(tileSize, 10, tileSize);
+    const notebookGeometry = new THREE.BoxGeometry(2, 2.5, 0.5);
+
+    function createMap() {
+        floorTex.repeat.set(mapSize * 2, mapSize * 2);
+        ceilingTex.repeat.set(mapSize * 4, mapSize * 4);
+        const planeGeo = new THREE.PlaneGeometry(mapSize * tileSize, mapSize * tileSize);
+        const floor = new THREE.Mesh(planeGeo, floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        scene.add(floor);
+        const ceiling = new THREE.Mesh(planeGeo, ceilingMaterial);
+        ceiling.rotation.x = Math.PI / 2;
+        ceiling.position.y = 10;
+        scene.add(ceiling);
+
+        for (let x = -mapSize/2; x <= mapSize/2; x++) {
+            for (let z = -mapSize/2; z <= mapSize/2; z++) {
+                let gx = x + mapSize/2;
+                let gz = z + mapSize/2;
+                if (x === -mapSize/2 || x === mapSize/2 || z === -mapSize/2 || z === mapSize/2) {
+                    addWall(x * tileSize, z * tileSize);
+                    pathGrid[gx][gz] = 1;
+                } else if (Math.random() < 0.2 && (Math.abs(x) > 2 || Math.abs(z) > 2)) {
+                    if (x === 0 && z === -8) continue;
+                    addWall(x * tileSize, z * tileSize);
+                    pathGrid[gx][gz] = 1;
+                }
+            }
+        }
+
+        let nbsSpawned = 0;
+        while(nbsSpawned < totalNotebooks) {
+            let rx = (Math.floor(Math.random() * (mapSize-4)) - (mapSize/2 - 2)) * tileSize;
+            let rz = (Math.floor(Math.random() * (mapSize-4)) - (mapSize/2 - 2)) * tileSize;
+            if (!checkWallCollision(rx, rz, 1) && (Math.abs(rx) > 20 || Math.abs(rz) > 20)) {
+                let nb = new THREE.Mesh(notebookGeometry, notebookMaterial);
+                nb.position.set(rx, 3, rz);
+                const pointLight = new THREE.PointLight(0xffd700, 1, 15);
+                nb.add(pointLight);
+                scene.add(nb);
+                notebooks.push(nb);
+                nbsSpawned++;
+            }
+        }
+    }
+
+    function addWall(x, z) {
+        const mat = Math.random() < 0.3 ? lockerMaterial : wallMaterial;
+        const wall = new THREE.Mesh(wallGeometry, mat);
+        wall.position.set(x, 5, z);
+        scene.add(wall);
+        walls.push(new THREE.Box3().setFromObject(wall));
+    }
+
+    camera.position.set(0, 4, 0);
+    const playerRadius = 2;
+    const baseSpeed = 0.25;
+    const sprintSpeed = 0.45;
+    const maxStamina = 100;
+    let currentStamina = 100;
+    let isSprinting = false;
+    let canSprint = true;
+    
+    const velocity = new THREE.Vector3();
+    let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false;
+    let pitch = 0, yaw = 0;
+    const PI_2 = Math.PI / 2;
+
+    function checkWallCollision(x, z, radius = playerRadius) {
+        const playerBox = new THREE.Box3(
+            new THREE.Vector3(x - radius, 0, z - radius),
+            new THREE.Vector3(x + radius, 10, z + radius)
+        );
+        for (let i = 0; i < walls.length; i++) {
+            if (playerBox.intersectsBox(walls[i])) return true;
+        }
+        return false;
+    }
+
+    // --- Key Input Mapping ---
+    const keyState = {};
+
+    document.addEventListener('keydown', (event) => {
+        keyState[event.code] = true;
+        if (event.code === 'Tab') {
+            event.preventDefault();
+            if (gameState === 'playing') toggleMap();
+            else if (gameState === 'map') document.body.requestPointerLock();
+        }
+        updateMovement();
+    });
+
+    document.addEventListener('keyup', (event) => {
+        keyState[event.code] = false;
+        updateMovement();
+    });
+
+    function updateMovement() {
+        if (gameState !== 'playing') return;
+        moveForward = !!(keyState['KeyW'] || keyState['ArrowUp']);
+        moveBackward = !!(keyState['KeyS'] || keyState['ArrowDown']);
+        moveLeft = !!(keyState['KeyA'] || keyState['ArrowLeft']);
+        moveRight = !!(keyState['KeyD'] || keyState['ArrowRight']);
+        isSprinting = !!(keyState['ShiftLeft'] || keyState['ShiftRight']);
+    }
+
+    document.body.addEventListener('mousemove', (event) => {
+        if (document.pointerLockElement === document.body && (gameState === 'playing' || gameState === 'question')) {
+            const movementX = event.movementX || 0;
+            const movementY = event.movementY || 0;
+            yaw -= movementX * 0.002;
+            pitch -= movementY * 0.002;
+            pitch = Math.max(-PI_2, Math.min(PI_2, pitch));
+            camera.quaternion.setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
+        }
+    });
+
+    function showScreen(screenName) {
+        uiLayer.style.display = 'flex';
+        uiLayer.style.background = 'rgba(0, 0, 0, 0.6)';
+        Object.values(screens).forEach(s => s.classList.add('hidden-ui'));
+        if (screens[screenName]) screens[screenName].classList.remove('hidden-ui');
+    }
+
+    function hideScreens() {
+        uiLayer.style.display = 'none';
+        Object.values(screens).forEach(s => s.classList.add('hidden-ui'));
+    }
+
+    document.getElementById('start-btn').addEventListener('click', () => {
+        const diff = document.querySelector('input[name="difficulty"]:checked').value;
+        if (diff === 'easy') { aisa.baseSpeed = 0.05; speedMultiplier = 0.03; }
+        else if (diff === 'normal') { aisa.baseSpeed = 0.07; speedMultiplier = 0.06; }
+        else if (diff === 'hard') { aisa.baseSpeed = 0.12; speedMultiplier = 0.10; }
+        else if (diff === 'aisa') { aisa.baseSpeed = 0.35; speedMultiplier = 0.20; }
+        document.body.requestPointerLock();
+    });
+
+    document.getElementById('resume-btn').addEventListener('click', () => {
+        document.body.requestPointerLock();
+    });
+
+    document.addEventListener('pointerlockchange', () => {
+        if (document.pointerLockElement === document.body) {
+            if (gameState === 'start' || gameState === 'paused' || gameState === 'resume' || gameState === 'map' || gameState === 'question_cleared') {
+                gameState = 'playing';
+                hideScreens();
+                updateMovement(); // Sincronizza i tasti premuti immediatamente
+            }
+        } else {
+            if (gameState === 'playing') {
+                gameState = 'paused';
+                showScreen('resume');
+                moveForward = moveBackward = moveLeft = moveRight = isSprinting = false;
+            }
+        }
+    });
+
+    document.getElementById('close-map-btn').addEventListener('click', () => {
+        document.body.requestPointerLock();
+    });
+
+    function toggleMap() {
+        gameState = 'map';
+        document.exitPointerLock();
+        moveForward = moveBackward = moveLeft = moveRight = isSprinting = false;
+        showScreen('map');
+        drawMap();
+    }
+
+    function drawMap() {
+        const canvas = document.getElementById('map-canvas');
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const worldSize = mapSize * tileSize;
+        const offset = worldSize / 2;
+        const scale = canvas.width / worldSize;
+        const toCanvasX = (worldX) => (worldX + offset) * scale;
+        const toCanvasY = (worldZ) => (worldZ + offset) * scale;
+
+        ctx.fillStyle = '#444';
+        for (let w of walls) {
+            ctx.fillRect(toCanvasX(w.min.x), toCanvasY(w.min.z), (w.max.x - w.min.x) * scale, (w.max.z - w.min.z) * scale);
+        }
+        ctx.fillStyle = '#ffff00';
+        for (let nb of notebooks) {
+            ctx.beginPath(); ctx.arc(toCanvasX(nb.position.x), toCanvasY(nb.position.z), 4, 0, Math.PI * 2); ctx.fill();
+        }
+        if (aisa.active) {
+            let ax = toCanvasX(aisa.mesh.position.x), ay = toCanvasY(aisa.mesh.position.z);
+            let grad = ctx.createRadialGradient(ax, ay, 0, ax, ay, 50);
+            grad.addColorStop(0, 'rgba(255, 0, 0, 0.7)'); grad.addColorStop(1, 'rgba(255, 0, 0, 0)');
+            ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(ax, ay, 50, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.fillStyle = '#0088ff'; ctx.beginPath(); ctx.arc(toCanvasX(camera.position.x), toCanvasY(camera.position.z), 5, 0, Math.PI * 2); ctx.fill();
+        const dirEuler = new THREE.Euler(0, yaw, 0, 'YXZ');
+        const forwardDir = new THREE.Vector3(0, 0, -1).applyEuler(dirEuler);
+        ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(toCanvasX(camera.position.x), toCanvasY(camera.position.z));
+        ctx.lineTo(toCanvasX(camera.position.x + forwardDir.x * 8), toCanvasY(camera.position.z + forwardDir.z * 8)); ctx.stroke();
+    }
+
+    function triggerQuestion(meshIndex) {
+        gameState = 'question';
+        document.exitPointerLock();
+        
+        currentNotebookMesh = notebooks[meshIndex];
+        let qData = questionsPool[currentQuestionIndex % questionsPool.length];
+        
+        showScreen('question');
+        document.getElementById('question-title').innerText = `Quaderno ${collectedNotebooks + 1}/${totalNotebooks} Trovato!`;
+        questionText.innerText = qData.q;
+        
+        let shuffledOptions = qData.options.map((opt, idx) => ({ text: opt, isCorrect: (idx === qData.correct) }));
+        for (let i = shuffledOptions.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
+        }
+
+        answersContainer.innerHTML = '';
+        shuffledOptions.forEach((optData) => {
+            let btn = document.createElement('button');
+            btn.className = 'answer-btn';
+            btn.innerText = optData.text;
+            btn.onclick = () => answerQuestion(optData.isCorrect, meshIndex);
+            answersContainer.appendChild(btn);
+        });
+    }
+
+    function answerQuestion(isCorrect, meshIndex) {
+        scene.remove(currentNotebookMesh);
+        notebooks.splice(meshIndex, 1);
+        collectedNotebooks++;
+        hud.innerText = `Quaderni: ${collectedNotebooks}/${totalNotebooks}`;
+        currentQuestionIndex++;
+
+        if (isCorrect) {
+            uiLayer.style.background = 'rgba(0, 255, 0, 0.3)';
+        } else {
+            wrongAnswers++;
+            aisa.active = true;
+            aisa.currentSpeed = aisa.baseSpeed + ((wrongAnswers - 1) * speedMultiplier);
+            uiLayer.style.background = 'rgba(255, 0, 0, 0.6)';
+        }
+
+        setTimeout(() => {
+            if (collectedNotebooks >= totalNotebooks) {
+                gameState = 'win';
+                showScreen('win');
+            } else {
+                // Invece di mostrare Resume, chiediamo il lock per tornare subito a giocare
+                gameState = 'question_cleared';
+                document.body.requestPointerLock();
+            }
+        }, 150);
+    }
+
+    function triggerGameOver() {
+        gameState = 'gameover';
+        document.exitPointerLock();
+        showScreen('gameover');
+        uiLayer.style.background = 'rgba(0,0,0,1)';
+    }
+
+    function updateAisaPathfinding() {
+        let px = Math.round(camera.position.x / tileSize) + mapSize/2;
+        let pz = Math.round(camera.position.z / tileSize) + mapSize/2;
+        px = Math.max(0, Math.min(mapSize, px)); pz = Math.max(0, Math.min(mapSize, pz));
+        for(let i=0; i<=mapSize; i++) for(let j=0; j<=mapSize; j++) distanceMap[i][j] = 9999;
+        let queue = [{x: px, z: pz, dist: 0}];
+        distanceMap[px][pz] = 0;
+        let head = 0;
+        let dirs = [{dx:0, dz:-1}, {dx:1, dz:0}, {dx:0, dz:1}, {dx:-1, dz:0}, {dx:1, dz:-1}, {dx:1, dz:1}, {dx:-1, dz:1}, {dx:-1, dz:-1}];
+        while(head < queue.length) {
+            let curr = queue[head++];
+            for(let d of dirs) {
+                let nx = curr.x + d.dx, nz = curr.z + d.dz;
+                if (nx >= 0 && nx <= mapSize && nz >= 0 && nz <= mapSize) {
+                    if (pathGrid[nx][nz] === 0) {
+                        if (d.dx !== 0 && d.dz !== 0) {
+                            if (pathGrid[curr.x + d.dx][curr.z] === 1 || pathGrid[curr.x][curr.z + d.dz] === 1) continue;
+                        }
+                        let newDist = curr.dist + (d.dx !== 0 && d.dz !== 0 ? 1.414 : 1);
+                        if (newDist < distanceMap[nx][nz]) { distanceMap[nx][nz] = newDist; queue.push({x: nx, z: nz, dist: newDist}); }
+                    }
+                }
+            }
+        }
+    }
+
+    const clock = new THREE.Clock();
+
+    function animate() {
+        requestAnimationFrame(animate);
+        const delta = clock.getDelta();
+
+        if (gameState === 'playing') {
+            updateMovement(); // Controlla lo stato dei tasti ad ogni frame
+            
+            notebooks.forEach(nb => {
+                nb.rotation.y += 2 * delta;
+                nb.position.y = 3 + Math.sin(clock.elapsedTime * 3 + nb.position.x) * 0.5;
+                if (camera.position.distanceTo(nb.position) < 4) {
+                    const index = notebooks.indexOf(nb);
+                    if (index > -1) triggerQuestion(index);
+                }
+            });
+
+            velocity.x = 0; velocity.z = 0;
+            const isMoving = moveForward || moveBackward || moveLeft || moveRight;
+
+            if (isSprinting && isMoving && canSprint) {
+                currentStamina -= 30 * delta;
+                if (currentStamina <= 0) { currentStamina = 0; canSprint = false; }
+            } else {
+                currentStamina += 15 * delta;
+                if (currentStamina > 25) canSprint = true;
+                if (currentStamina > maxStamina) currentStamina = maxStamina;
+            }
+
+            const staminaBar = document.getElementById('stamina-bar');
+            staminaBar.style.width = `${(currentStamina / maxStamina) * 100}%`;
+            staminaBar.style.backgroundColor = canSprint ? '#00ff00' : '#ff0000';
+
+            const moveSpeed = (isSprinting && isMoving && canSprint) ? sprintSpeed : baseSpeed;
+            const dirEuler = new THREE.Euler(0, yaw, 0, 'YXZ');
+            const forwardDir = new THREE.Vector3(0, 0, -1).applyEuler(dirEuler);
+            const rightDir = new THREE.Vector3(1, 0, 0).applyEuler(dirEuler);
+
+            if (moveForward) velocity.add(forwardDir.clone().multiplyScalar(moveSpeed));
+            if (moveBackward) velocity.add(forwardDir.clone().multiplyScalar(-moveSpeed));
+            if (moveRight) velocity.add(rightDir.clone().multiplyScalar(moveSpeed));
+            if (moveLeft) velocity.add(rightDir.clone().multiplyScalar(-moveSpeed));
+
+            if (!checkWallCollision(camera.position.x + velocity.x, camera.position.z)) camera.position.x += velocity.x;
+            if (!checkWallCollision(camera.position.x, camera.position.z + velocity.z)) camera.position.z += velocity.z;
+
+            if (aisa.active && aisa.currentSpeed > 0) {
+                updateAisaPathfinding();
+                let ax = Math.round(aisa.mesh.position.x / tileSize) + mapSize/2;
+                let az = Math.round(aisa.mesh.position.z / tileSize) + mapSize/2;
+                ax = Math.max(0, Math.min(mapSize, ax)); az = Math.max(0, Math.min(mapSize, az));
+                let min_dist = distanceMap[ax][az], targetWorldX = aisa.mesh.position.x, targetWorldZ = aisa.mesh.position.z, foundBetter = false;
+                let dirs = [{dx:0, dz:-1}, {dx:1, dz:0}, {dx:0, dz:1}, {dx:-1, dz:0}, {dx:1, dz:-1}, {dx:1, dz:1}, {dx:-1, dz:1}, {dx:-1, dz:-1}];
+                for(let d of dirs) {
+                    let nx = ax + d.dx, nz = az + d.dz;
+                    if (nx >= 0 && nx <= mapSize && nz >= 0 && nz <= mapSize) {
+                        if (d.dx !== 0 && d.dz !== 0) {
+                            if (pathGrid[ax + d.dx][az] === 1 || pathGrid[az + d.dz][ax] === 1) continue;
+                        }
+                        if (distanceMap[nx][nz] < min_dist) { min_dist = distanceMap[nx][nz]; targetWorldX = (nx - mapSize/2) * tileSize; targetWorldZ = (nz - mapSize/2) * tileSize; foundBetter = true; }
+                    }
+                }
+                const moveDir = new THREE.Vector3();
+                if (foundBetter) moveDir.set(targetWorldX - aisa.mesh.position.x, 0, targetWorldZ - aisa.mesh.position.z);
+                else { moveDir.subVectors(camera.position, aisa.mesh.position); moveDir.y = 0; }
+                if (moveDir.length() > 0.1) moveDir.normalize();
+                const stepX = moveDir.x * aisa.currentSpeed, stepZ = moveDir.z * aisa.currentSpeed;
+                if (!checkWallCollision(aisa.mesh.position.x + stepX, aisa.mesh.position.z, 3)) aisa.mesh.position.x += stepX;
+                if (!checkWallCollision(aisa.mesh.position.x, aisa.mesh.position.z + stepZ, 3)) aisa.mesh.position.z += stepZ;
+                if (camera.position.distanceTo(aisa.mesh.position) < 4) triggerJumpscare();
+            }
+        }
+        renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    createMap();
+    showScreen('start');
+    animate();
+</script>
+</body>
+</html>
