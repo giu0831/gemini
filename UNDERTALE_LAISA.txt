@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Undertale Bossfight: La Prof. Aisa (Fase 2)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    
+    <style>
+        body, html {
+            background-color: black; color: white; font-family: 'VT323', monospace;
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+            user-select: none; -webkit-user-select: none; overflow: hidden; letter-spacing: 1px;
+        }
+
+        #intro-screen, #naming-screen, #confirm-screen, #save-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background-color: black; z-index: 100;
+        }
+        #naming-screen, #confirm-screen, #save-screen { display: none; }
+
+        .title-undertale { font-size: 80px; letter-spacing: 12px; margin: 0; text-align: center; }
+        .title-yellow { font-size: 60px; letter-spacing: 5px; color: #ffe600; margin-top: 10px; text-align: center; }
+
+        .naming-title { font-size: 40px; margin-bottom: 30px; text-align: center; transition: color 0.3s;}
+        #player-name-display { font-size: 60px; letter-spacing: 10px; margin-bottom: 40px; height: 60px; color: white; text-align: center; }
+        #naming-grid { display: grid; grid-template-columns: repeat(7, 50px); gap: 15px 30px; text-align: center; font-size: 40px; margin-bottom: 30px; }
+        .naming-char { color: white; transition: color 0.1s; cursor: pointer; }
+        .naming-char.active { color: yellow; text-shadow: 0 0 5px yellow; }
+
+        #confirm-name-display { font-size: 60px; letter-spacing: 10px; margin-bottom: 40px; }
+        #confirm-message { font-size: 32px; text-align: center; margin-bottom: 60px; white-space: pre-wrap; min-height: 80px; padding: 0 40px; line-height: 1.1; }
+        .confirm-options { display: flex; justify-content: space-around; width: 400px; font-size: 40px; }
+        .confirm-opt { display: flex; align-items: center; cursor: pointer; }
+
+        .save-box { width: 500px; max-width: 90%; border: 4px solid white; padding: 25px; box-sizing: border-box; }
+        .save-header { display: flex; justify-content: space-between; font-size: 32px; margin-bottom: 10px; }
+        .save-location { font-size: 32px; margin-bottom: 40px; }
+        .save-options { display: flex; justify-content: space-around; font-size: 32px; }
+        .cursor { color: red; margin-right: 15px; font-size: 26px; }
+
+        #game-container { width: 540px; display: none; flex-direction: column; align-items: center; position: relative; }
+        #boss-area { height: 280px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative; width: 100%; margin-bottom: 10px; }
+        
+        #boss-sprite { 
+            height: 250px; width: auto; max-width: 100%; object-fit: contain; image-rendering: pixelated;
+            filter: grayscale(100%) contrast(150%) brightness(1.2);
+            animation: float 3s infinite ease-in-out; z-index: 5; display: none;
+        }
+        #boss-placeholder {
+            width: 160px; height: 200px; background: #222; border: 3px solid white; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            font-size: 24px; color: white; text-align: center; animation: float 3s infinite ease-in-out;
+        }
+
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        @keyframes dodgeAnim { 0% { transform: translateX(0); } 20% { transform: translateX(-100px); } 80% { transform: translateX(-100px); } 100% { transform: translateX(0); } }
+        .dodging { animation: dodgeAnim 0.8s ease-out !important; }
+        .miss-text { color: #b3b3b3 !important; transform: translate(-60px, -40px); font-weight: bold; }
+
+        #boss-bubble {
+            position: absolute; top: 20px; right: -30px; z-index: 99; background: white; color: black;
+            padding: 10px 15px; border: 3px solid black; border-radius: 12px; font-size: 22px; display: none; max-width: 180px; line-height: 1.1;
+        }
+
+        /* TRANSIZIONI AGGIUNTE PER IL RESIZE DINAMICO */
+        #battle-box { 
+            width: 540px; height: 160px; border: 4px solid white; position: relative; background: black; margin: 0 auto; 
+            transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); 
+            overflow: hidden; 
+        }
+        .flash-blue { animation: bgFlashBlue 0.4s ease-out; }
+        .flash-red { animation: bgFlashRed 0.4s ease-out; }
+        @keyframes bgFlashBlue { 0% { background-color: #0044aa; } 100% { background-color: black; } }
+        @keyframes bgFlashRed { 0% { background-color: #aa0000; } 100% { background-color: black; } }
+
+        #text-area { padding: 15px 20px; font-size: 32px; line-height: 1.2; position: absolute; top: 0; left: 0; width: 100%; height: 100%; box-sizing: border-box; }
+        #battle-canvas { display: none; width: 100%; height: 100%; }
+        #target-bar { display: none; width: 100%; height: 100%; background: #222; position: relative; }
+        #target-cursor { position: absolute; left: 0; top: 0; width: 8px; height: 100%; background: white; box-shadow: 0 0 10px white; }
+
+        #stats-area { width: 540px; display: flex; justify-content: space-between; align-items: center; margin-top: 15px; font-size: 28px; }
+        .hp-bar-bg { width: 100px; height: 22px; background: #c00; display: inline-block; margin: 0 10px; position: relative; }
+        .hp-bar-fill { width: 100%; height: 100%; background: #ff0; transition: width 0.2s; }
+
+        #buttons-area { width: 540px; display: flex; justify-content: space-between; margin-top: 20px; }
+        .action-btn { border: 2px solid #f90; color: #f90; padding: 5px 15px; font-size: 26px; cursor: pointer; flex: 1; margin: 0 5px; text-align: center; }
+        .action-btn.active { background: #f90; color: black; }
+
+        #mobile-controls { display: none; position: absolute; bottom: 10px; left: 0; width: 100%; justify-content: space-between; padding: 0 10px; z-index: 200; box-sizing: border-box; }
+        .dpad { position: relative; width: 140px; height: 140px; }
+        .dpad-btn { position: absolute; width: 45px; height: 45px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.4); border-radius: 8px; display: flex; justify-content: center; align-items: center; color: white; cursor: pointer;}
+        .dpad-btn.up { top: 0; left: 47px; } .dpad-btn.down { bottom: 0; left: 47px; } .dpad-btn.left { top: 47px; left: 0; } .dpad-btn.right { top: 47px; right: 0; }
+        .action-buttons { display: flex; align-items: flex-end; gap: 10px; margin-bottom: 20px; }
+        .action-btn-mobile { width: 55px; height: 55px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.4); display: flex; justify-content: center; align-items: center; font-size: 24px; color: white; cursor: pointer;}
+
+        @media (max-width: 600px) {
+            #game-container, #stats-area, #buttons-area { width: 95%; }
+            #battle-box { width: 95%; }
+            #buttons-area { flex-wrap: wrap; }
+            .action-btn { font-size: 20px; flex-basis: 45%; margin-bottom: 5px; }
+            #mobile-controls { display: flex; }
+            #boss-bubble { top: -40px; right: 10px; font-size: 18px; }
+            #boss-sprite { height: 160px; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="intro-screen">
+    <div class="title-undertale">UNDERTALE</div>
+    <div class="title-yellow">LA PROF. AISA</div>
+</div>
+
+<div id="naming-screen">
+    <div class="naming-title" id="naming-title">Dai un nome allo studente.</div>
+    <div id="player-name-display">_ _ _ _ _ _ _ _</div>
+    <div id="naming-grid"></div>
+</div>
+
+<div id="confirm-screen">
+    <div id="confirm-name-display">STUDENTE</div>
+    <div id="confirm-message">È questo il tuo nome?</div>
+    <div class="confirm-options">
+        <div class="confirm-opt" id="opt-yes"><span class="cursor" id="cursor-yes">❤</span> Sì</div>
+        <div class="confirm-opt" id="opt-no"><span class="cursor" id="cursor-no">❤</span> No</div>
+    </div>
+</div>
+
+<div id="save-screen">
+    <div class="save-box">
+        <div class="save-header">
+            <span id="save-name-ui">STUDENTE</span>
+            <span id="save-lv-ui">LV 20</span>
+            <span>08:00</span>
+        </div>
+        <div class="save-location">Aula di Lettere (Ora di Verifica)</div>
+        <div class="save-options">
+            <div class="save-opt"><span class="cursor" id="cursor-continue">❤</span> Continua</div>
+        </div>
+    </div>
+</div>
+
+<div id="game-container">
+    <div id="boss-area">
+        <div id="boss-bubble"></div>
+        <img id="boss-sprite" src="https://i.imgur.com/6ORwOIq.jpg">
+        <div id="boss-placeholder" style="display:none;">PROF. AISA</div>
+        <div id="damage-text" style="display:none; position:absolute; top: 60px; font-size: 50px; color: red; text-shadow: 2px 2px 0 #000; z-index: 10;"></div>
+        <div id="slash-anim" style="display:none; position:absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 100px; color: white; z-index: 11; font-family: Arial;">/</div>
+    </div>
+
+    <div id="battle-box">
+        <div id="text-area"></div>
+        <div id="target-bar"><div id="target-cursor"></div></div>
+        <canvas id="battle-canvas"></canvas>
+    </div>
+
+    <div id="stats-area">
+        <span id="stats-name-ui">STUDENTE</span>
+        <span id="stats-lv-ui">LV 20</span>
+        <div style="display: flex; align-items: center;">
+            <span>HP</span>
+            <div class="hp-bar-bg"><div id="hp-bar-fill" class="hp-bar-fill"></div></div>
+            <span id="hp-text">99 / 99</span>
+        </div>
+    </div>
+
+    <div id="buttons-area">
+        <div class="action-btn active" id="btn-fight">COMBATTI</div>
+        <div class="action-btn" id="btn-act">AGISCI</div>
+        <div class="action-btn" id="btn-item">OGGETTI</div>
+        <div class="action-btn" id="btn-mercy">RISPARMIA</div>
+    </div>
+</div>
+
+<div id="mobile-controls">
+    <div class="dpad">
+        <div class="dpad-btn up" id="m-up">▲</div>
+        <div class="dpad-btn left" id="m-left">◀</div>
+        <div class="dpad-btn right" id="m-right">▶</div>
+        <div class="dpad-btn down" id="m-down">▼</div>
+    </div>
+    <div class="action-buttons">
+        <div class="action-btn-mobile" id="m-x">X</div>
+        <div class="action-btn-mobile" id="m-z">Z</div>
+    </div>
+</div>
+
+<script>
+    const bossImg = document.getElementById('boss-sprite');
+    const bossPlac = document.getElementById('boss-placeholder');
+    const canvas = document.getElementById('battle-canvas');
+    const ctx = canvas.getContext('2d');
+    const textArea = document.getElementById('text-area');
+    const bossBubble = document.getElementById('boss-bubble');
+    const targetBar = document.getElementById('target-bar');
+    const targetCursor = document.getElementById('target-cursor');
+    const hpBarFill = document.getElementById('hp-bar-fill');
+    const hpText = document.getElementById('hp-text');
+    const battleBox = document.getElementById('battle-box');
+    const buttons = [document.getElementById('btn-fight'), document.getElementById('btn-act'), document.getElementById('btn-item'), document.getElementById('btn-mercy')];
+
+    // Caricamento Immagine
+    const possiblePaths = ["https://i.imgur.com/6ORwOIq.jpg", "BossAisa.jpg", "/artifacts/default-app-id/public/data/BossAisa.jpg"];
+    let currentPathIndex = 0;
+    function tryLoadNextImage() {
+        if (currentPathIndex < possiblePaths.length) { bossImg.src = possiblePaths[currentPathIndex]; currentPathIndex++; } 
+        else { bossImg.style.display = 'none'; bossPlac.style.display = 'flex'; }
+    }
+    bossImg.onload = () => { bossImg.style.display = 'block'; bossPlac.style.display = 'none'; };
+    bossImg.onerror = () => { tryLoadNextImage(); }; tryLoadNextImage();
+
+    let gameState = 'INTRO'; 
+    let playerName = ""; 
+    const namingChars = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','<-','OK'];
+    let namingIndex = 0; let confirmSelection = 0; 
+
+    let playerLV = 20; let MAX_HP = 99; let playerHP = MAX_HP; let currentTurn = 0; let danteBuff = false;
+    let blockNameChoice = false;
+
+    // EVENTI DINAMICI PER TURNO (Sans style)
+    let turnEvents = []; 
+
+    let soul = { x: 150, y: 150, size: 12, speed: 4.5, color: 'red', vy: 0, gravity: 0.25, jump: -7.5, grounded: false };
+    let keys = {};
+    let blasters = []; let pencils = []; let grades = []; let chalks = [];
+    let defendFrames = 0; let currentDefendDuration = 400; let animationId;
+    let targetX = 0; let targetDirection = 1; let targetReqId; let invincibilityFrames = 0; 
+
+    const bossQuotes = [
+        "\"Credi che lo spazio sia limitato? Povero illuso.\"",
+        "\"La gravità è solo una convenzione letteraria.\"",
+        "\"Smettila di saltellare, abbasso il voto di condotta!\"",
+        "\"Vediamo se sai schivare la Divina Commedia.\"",
+        "\"Oggi la verifica è... dinamica.\"",
+        "\"Il tuo cuore batte forte... è ROSSO o BLU?\"",
+        "\"Ahi serva Italia, di dolore ostello...\""
+    ];
+
+    function initGame() {
+        document.getElementById('intro-screen').style.display = 'flex';
+        setTimeout(() => {
+            document.getElementById('intro-screen').style.display = 'none';
+            document.getElementById('naming-screen').style.display = 'flex';
+            gameState = 'NAMING'; initNamingGrid();
+        }, 1500);
+    }
+    initGame();
+
+    function initNamingGrid() {
+        const grid = document.getElementById('naming-grid'); grid.innerHTML = '';
+        namingChars.forEach((char, index) => {
+            let div = document.createElement('div'); div.className = 'naming-char'; div.innerText = char; div.id = 'char-' + index;
+            grid.appendChild(div);
+        }); updateNamingUI();
+    }
+
+    function updateNamingUI() {
+        let displayStr = playerName.split('').join(' ');
+        if (playerName.length < 8) displayStr += (playerName.length > 0 ? ' ' : '') + '_ '.repeat(8 - playerName.length).trim();
+        document.getElementById('player-name-display').innerText = displayStr;
+        for(let i = 0; i < namingChars.length; i++) {
+            let el = document.getElementById('char-' + i);
+            if (i === namingIndex) el.classList.add('active'); else el.classList.remove('active');
+        }
+    }
+
+    window.addEventListener('keydown', (e) => { keys[e.key] = true; processInput(e.key); });
+    window.addEventListener('keyup', (e) => { keys[e.key] = false; });
+
+    function processInput(key) {
+        if (gameState === 'NAMING') {
+            if (key === 'ArrowLeft') { if (namingIndex % 7 !== 0) namingIndex--; }
+            else if (key === 'ArrowRight') { if (namingIndex % 7 !== 6 && namingIndex < 27) namingIndex++; }
+            else if (key === 'ArrowUp') { if (namingIndex >= 7) namingIndex -= 7; }
+            else if (key === 'ArrowDown') { if (namingIndex + 7 <= 27) namingIndex += 7; }
+            else if (key === 'z' || key === 'Z' || key === 'Enter') {
+                let char = namingChars[namingIndex];
+                if (char === '<-') playerName = playerName.slice(0, -1);
+                else if (char === 'OK') { if (playerName.trim().length > 0) checkNameEasterEggs(); }
+                else if (playerName.length < 8) playerName += char;
+            } else if (key === 'x' || key === 'X' || key === 'Backspace') playerName = playerName.slice(0, -1);
+            updateNamingUI();
+        } 
+        else if (gameState === 'CONFIRM_NAME') {
+            if (key === 'ArrowLeft' || key === 'ArrowRight') { confirmSelection = (confirmSelection === 0) ? 1 : 0; updateConfirmCursor(); }
+            if (key === 'z' || key === 'Z' || key === 'Enter') { 
+                if (blockNameChoice || confirmSelection === 1) backToNaming(); 
+                else confirmName(); 
+            } 
+        } 
+        else if (gameState === 'SAVE_SCREEN') { if (key === 'z' || key === 'Z' || key === 'Enter') startGame(); } 
+        else if (gameState === 'MAIN_MENU') {
+            if (key === 'ArrowLeft') { selectedButton = (selectedButton - 1 + 4) % 4; updateButtons(); }
+            else if (key === 'ArrowRight') { selectedButton = (selectedButton + 1) % 4; updateButtons(); }
+            else if (key === 'z' || key === 'Z' || key === 'Enter') selectAction();
+        } 
+        else if (gameState === 'MENU_SELECTION') {
+            if (key === 'ArrowUp') { menuSelectionIndex = Math.max(0, menuSelectionIndex - 1); updateMenuSelectionUI(); }
+            else if (key === 'ArrowDown') { menuSelectionIndex = Math.min(menuOptions.length - 1, menuSelectionIndex + 1); updateMenuSelectionUI(); }
+            else if (key === 'z' || key === 'Z' || key === 'Enter') executeMenuAction();
+            else if (key === 'x' || key === 'X') showMainMenu();
+        } 
+        else if (gameState === 'TARGETING') { if (key === 'z' || key === 'Z' || key === 'Enter') stopTarget(); } 
+        else if (gameState === 'BOSS_DIALOGUE') { if (key === 'z' || key === 'Z' || key === 'Enter') startDefendPhase(); }
+    }
+
+    // ==========================================
+    // TUTTI GLI EASTER EGG DEI NOMI
+    // ==========================================
+    function checkNameEasterEggs() {
+        let name = playerName.trim().toUpperCase();
+        let msg = "È questo il tuo nome?";
+        blockNameChoice = false;
+
+        const eggs = {
+            "SANS": { m: "no.", b: true },
+            "FLOWEY": { m: "Io ho già scelto quel nome.", b: true },
+            "TORIEL": { m: "Penso che dovresti pensare a un tuo nome, piccolo.", b: true },
+            "PAPYRUS": { m: "LO PERMETTO!!!", b: false },
+            "UNDYNE": { m: "Trova il tuo nome!", b: true },
+            "ALPHYS": { m: "N-non farlo.", b: true },
+            "METTATON": { m: "OOOOH!!! STAI PROMUOVENDO IL MIO BRAND?", b: false },
+            "ASGORE": { m: "Non puoi.", b: true },
+            "ASRIEL": { m: "...", b: true },
+            "GASTER": { m: "", b: true, reload: true },
+            "TOBY": { m: "Bau.", b: false },
+            "TEMMIE": { m: "hOI!", b: false },
+            "FRISK": { m: "Attenzione: questo nome renderà la tua vita un inferno.", b: false },
+            "CHARA": { m: "Il vero nome.", b: false },
+            "DANTE": { m: "Lasciate ogne speranza, voi ch'intrate...", b: false },
+            "AISA": { m: "Non osare rubarmi la cattedra!", b: true }
+        };
+
+        if (eggs[name]) {
+            if (eggs[name].reload) { window.location.reload(); return; }
+            msg = eggs[name].m;
+            blockNameChoice = eggs[name].b;
+        }
+
+        document.getElementById('confirm-name-display').innerText = name;
+        document.getElementById('confirm-message').innerText = msg;
+        
+        if (blockNameChoice) {
+            document.getElementById('opt-yes').style.display = 'none';
+            document.getElementById('opt-no').style.display = 'none';
+            setTimeout(() => { backToNaming(); playerName = ""; updateNamingUI(); }, 2500);
+        } else {
+            document.getElementById('opt-yes').style.display = 'flex';
+            document.getElementById('opt-no').style.display = 'flex';
+            confirmSelection = 0; updateConfirmCursor();
+        }
+
+        document.getElementById('naming-screen').style.display = 'none';
+        document.getElementById('confirm-screen').style.display = 'flex';
+        gameState = 'CONFIRM_NAME';
+    }
+
+    function updateConfirmCursor() {
+        document.getElementById('cursor-yes').style.visibility = (confirmSelection === 0) ? 'visible' : 'hidden';
+        document.getElementById('cursor-no').style.visibility = (confirmSelection === 1) ? 'visible' : 'hidden';
+    }
+
+    function backToNaming() {
+        document.getElementById('confirm-screen').style.display = 'none';
+        document.getElementById('naming-screen').style.display = 'flex';
+        gameState = 'NAMING';
+    }
+
+    function confirmName() {
+        let finalName = playerName.trim().toUpperCase();
+        document.getElementById('save-name-ui').innerText = finalName;
+        document.getElementById('stats-name-ui').innerText = finalName;
+        updateHP();
+        document.getElementById('confirm-screen').style.display = 'none';
+        document.getElementById('save-screen').style.display = 'flex';
+        gameState = 'SAVE_SCREEN';
+    }
+
+    function startGame() {
+        document.getElementById('save-screen').style.display = 'none';
+        document.getElementById('game-container').style.display = 'flex';
+        showMainMenu();
+    }
+
+    function updateHP() { hpText.innerText = `${playerHP} / ${MAX_HP}`; hpBarFill.style.width = (playerHP / MAX_HP * 100) + '%'; }
+    function updateButtons() { buttons.forEach((btn, i) => btn.className = i === selectedButton ? 'action-btn active' : 'action-btn'); }
+
+    function showMainMenu() {
+        gameState = 'MAIN_MENU'; textArea.style.display = 'block';
+        textArea.innerHTML = '* La PROF. AISA sta preparando una domanda a trabocchetto.';
+        targetBar.style.display = 'none'; canvas.style.display = 'none';
+        battleBox.style.height = '160px'; battleBox.style.width = window.innerWidth <= 600 ? '95%' : '540px';
+        updateButtons();
+    }
+
+    let selectedButton = 0; let menuSelectionIndex = 0; let menuOptions = [];
+
+    function selectAction() {
+        if (selectedButton === 0) startTargeting();
+        else if (selectedButton === 1) {
+            gameState = 'MENU_SELECTION'; menuOptions = ["* Controlla", "* Chiedi un 6", "* Recita Dante"]; menuSelectionIndex = 0; updateMenuSelectionUI();
+        } else if (selectedButton === 2) {
+            gameState = 'MENU_SELECTION'; menuOptions = ["* Gomma (Cura 50 HP)"]; menuSelectionIndex = 0; updateMenuSelectionUI();
+        } else if (selectedButton === 3) {
+            textArea.innerHTML = "* La campanella non è ancora suonata. Non scapperai."; setTimeout(bossTurn, 2000);
+        }
+    }
+
+    function updateMenuSelectionUI() {
+        let html = "";
+        menuOptions.forEach((opt, i) => {
+            let cursor = (i === menuSelectionIndex) ? "<span style='color:red; margin-right:10px;'>❤</span>" : "<span style='margin-right:22px;'></span>";
+            html += `<div>${cursor}${opt}</div>`;
+        });
+        textArea.innerHTML = html;
+    }
+
+    function executeMenuAction() {
+        const selectedOpt = menuOptions[menuSelectionIndex];
+        if (selectedOpt.includes("Controlla")) textArea.innerHTML = "* LA PROF. AISA 99 ATK 99 DEF.<br>* Distorce lo spazio e il tempo scolastico.";
+        else if (selectedOpt.includes("6")) { textArea.innerHTML = "* Le chiedi un 6...<br>* Ridacchia malefica."; danteBuff = false; }
+        else if (selectedOpt.includes("Dante")) { textArea.innerHTML = "* Reciti l'Inferno.<br>* Si commuove. Attacchi rallentati."; danteBuff = true; }
+        else if (selectedOpt.includes("Gomma")) { playerHP = Math.min(MAX_HP, playerHP + 50); updateHP(); textArea.innerHTML = "* Hai cancellato i tuoi errori!"; }
+        setTimeout(bossTurn, 2500);
+    }
+
+    function startTargeting() {
+        gameState = 'TARGETING'; textArea.style.display = 'none'; targetBar.style.display = 'block';
+        targetX = 0; targetDirection = 1; targetLoop();
+    }
+
+    function targetLoop() {
+        if (gameState !== 'TARGETING') return; targetX += 8 * targetDirection;
+        const limit = (battleBox.offsetWidth || 540) - 10;
+        if (targetX > limit) { targetX = limit; targetDirection = -1; } else if (targetX < 0) { targetX = 0; targetDirection = 1; }
+        targetCursor.style.left = targetX + 'px'; targetReqId = requestAnimationFrame(targetLoop);
+    }
+
+    function stopTarget() {
+        cancelAnimationFrame(targetReqId); gameState = 'ATTACK_ANIM';
+        let slash = document.getElementById('slash-anim'); slash.style.display = 'block';
+        setTimeout(() => {
+            slash.style.display = 'none'; let dmgText = document.getElementById('damage-text');
+            dmgText.innerText = "MISS"; dmgText.classList.add('miss-text'); dmgText.style.display = 'block';
+            bossImg.classList.add('dodging'); bossPlac.classList.add('dodging');
+            setTimeout(() => { dmgText.style.display = 'none'; dmgText.classList.remove('miss-text'); bossImg.classList.remove('dodging'); bossPlac.classList.remove('dodging'); bossTurn(); }, 1000);
+        }, 400);
+    }
+
+    function bossTurn() {
+        gameState = 'BOSS_DIALOGUE'; targetBar.style.display = 'none'; textArea.style.display = 'block'; bossBubble.style.display = 'block';
+        bossBubble.innerText = bossQuotes[currentTurn % bossQuotes.length]; textArea.innerHTML = "* (Preparati...)";
+    }
+
+    // ============================================
+    // GESTIONE ARENA E ATTACCHI DINAMICI
+    // ============================================
+    function changeSoulColor(color) {
+        if (soul.color === color) return;
+        soul.color = color; soul.vy = 0; soul.grounded = false;
+        battleBox.classList.remove('flash-blue', 'flash-red');
+        void battleBox.offsetWidth; // trigger reflow
+        battleBox.classList.add(color === 'blue' ? 'flash-blue' : 'flash-red');
+    }
+
+    function resizeBox(w, h) {
+        battleBox.style.width = (window.innerWidth <= 600 ? Math.min(w, window.innerWidth - 20) : w) + 'px';
+        battleBox.style.height = h + 'px';
+    }
+
+    function startDefendPhase() {
+        gameState = 'DEFEND'; bossBubble.style.display = 'none'; textArea.style.display = 'none'; canvas.style.display = 'block';
+        
+        // Setup iniziale di default
+        resizeBox(300, 300); soul.color = 'red'; soul.x = 150; soul.y = 150;
+        defendFrames = 0; blasters = []; pencils = []; grades = []; chalks = []; turnEvents = [];
+        invincibilityFrames = 0; currentDefendDuration = 450; 
+
+        let cycle = currentTurn % 4;
+
+        // PROGRAMMAZIONE EVENTI DINAMICI (SANS STYLE)
+        if (cycle === 0) {
+            // Turno Normale, poi schiaccia l'area
+            turnEvents.push({ f: 150, action: () => resizeBox(450, 150) });
+            turnEvents.push({ f: 300, action: () => resizeBox(150, 400) });
+        } 
+        else if (cycle === 1) {
+            // Turno gravità pazza a sorpresa
+            resizeBox(400, 200);
+            turnEvents.push({ f: 1, action: () => changeSoulColor('blue') });
+            turnEvents.push({ f: 150, action: () => changeSoulColor('red') });
+            turnEvents.push({ f: 160, action: () => resizeBox(200, 400) });
+            turnEvents.push({ f: 300, action: () => changeSoulColor('blue') });
+        }
+        else if (cycle === 2) {
+            // Box piccolissimo, proiettili veloci
+            resizeBox(150, 150);
+            turnEvents.push({ f: 200, action: () => resizeBox(500, 200) });
+            turnEvents.push({ f: 210, action: () => changeSoulColor('blue') });
+        }
+        else if (cycle === 3) {
+            // Corridoio Lungo
+            resizeBox(500, 100);
+            turnEvents.push({ f: 180, action: () => { resizeBox(250, 250); changeSoulColor('blue'); }});
+        }
+
+        requestAnimationFrame(defendLoop);
+    }
+
+    function getSpeedModifier() { return danteBuff ? 0.7 : 1 + (currentTurn * 0.05); }
+
+    function spawnProjectileBasedOnArea(type) {
+        let cw = canvas.width; let ch = canvas.height;
+        if (cw === 0 || ch === 0) return; // aspetta il resize
+
+        if (type === 'pencil' && soul.color === 'red') {
+            let py = Math.random() > 0.5 ? ch - 40 : 5;
+            pencils.push({ x: cw + 20, y: py, w: 14, h: 35, dx: -3 * getSpeedModifier(), dy: 0, pointing: py > ch/2 ? 'up' : 'down' });
+        }
+        else if (type === 'floor_pencil' && soul.color === 'blue') {
+            let ph = 20 + Math.random() * 20;
+            pencils.push({ x: cw + 20, y: ch - ph - 5, w: 16, h: ph, dx: -3 * getSpeedModifier(), dy: 0, pointing: 'up' });
+        }
+        else if (type === 'blaster') {
+            // Blaster sparano in base alle dimensioni attuali
+            let isHoriz = cw > ch;
+            blasters.push({
+                x: isHoriz ? (Math.random()>0.5 ? 20 : cw-20) : Math.max(30, Math.min(cw-30, soul.x)),
+                y: isHoriz ? Math.max(30, Math.min(ch-30, soul.y)) : (Math.random()>0.5 ? 20 : ch-20),
+                dir: isHoriz ? (soul.x > cw/2 ? 'L' : 'R') : (soul.y > ch/2 ? 'U' : 'D'),
+                state: 'charge', timer: 0
+            });
+        }
+        else if (type === 'grade') {
+            grades.push({ x: Math.random()>0.5?10:cw-10, y: 20+Math.random()*(ch-40), vx: (Math.random()>0.5?2:-2)*getSpeedModifier(), vy: (Math.random()>0.5?2:-2)*getSpeedModifier(), text: Math.random()>0.5?"2":"4" });
+        }
+    }
+
+    function defendLoop() {
+        if (gameState !== 'DEFEND') return;
+        
+        // AGGIORNA DIMENSIONI CANVAS DINAMICAMENTE
+        // Questo è il cuore della meccanica "Sans": il canvas segue le dimensioni CSS in tempo reale
+        if (canvas.width !== battleBox.clientWidth || canvas.height !== battleBox.clientHeight) {
+            canvas.width = battleBox.clientWidth;
+            canvas.height = battleBox.clientHeight;
+        }
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // ESEGUI EVENTI PROGRAMMATI
+        turnEvents.forEach(ev => { if (ev.f === defendFrames) ev.action(); });
+
+        let spd = keys['x'] ? soul.speed/2 : soul.speed;
+
+        // FISICA ANIMA
+        if (soul.color === 'red') {
+            let dx = 0; let dy = 0;
+            if (keys['ArrowLeft'] || keys['a']) dx -= 1; if (keys['ArrowRight'] || keys['d']) dx += 1;
+            if (keys['ArrowUp'] || keys['w']) dy -= 1; if (keys['ArrowDown'] || keys['s']) dy += 1;
+            if (dx !== 0 && dy !== 0) { let l = Math.sqrt(dx*dx + dy*dy); dx /= l; dy /= l; }
+            soul.x += dx * spd; soul.y += dy * spd;
+        } else if (soul.color === 'blue') {
+            let dx = 0;
+            if (keys['ArrowLeft'] || keys['a']) dx -= 1; if (keys['ArrowRight'] || keys['d']) dx += 1;
+            soul.x += dx * spd;
+            soul.vy += soul.gravity;
+            if ((keys['ArrowUp'] || keys['w']) && soul.grounded) { soul.vy = soul.jump; soul.grounded = false; }
+            if (!(keys['ArrowUp'] || keys['w']) && soul.vy < -2.0) soul.vy = -2.0;
+            soul.y += soul.vy;
+        }
+
+        // CONFINI DINAMICI (L'anima non può uscire dal riquadro anche se si restringe)
+        if (soul.x < 15) soul.x = 15;
+        if (soul.x > canvas.width - 15) soul.x = canvas.width - 15;
+        if (soul.y < 15) { soul.y = 15; if(soul.color==='blue') soul.vy = 0; }
+        
+        if (soul.y >= canvas.height - 15) { 
+            soul.y = canvas.height - 15; 
+            if(soul.color==='blue') { soul.vy = 0; soul.grounded = true; } 
+        } else { if(soul.color==='blue') soul.grounded = false; }
+
+        if (invincibilityFrames > 0) invincibilityFrames--;
+
+        // DISEGNO ANIMA
+        let sx = soul.x; let sy = soul.y; let sr = 4;
+        if (invincibilityFrames === 0 || Math.floor(invincibilityFrames / 6) % 2 === 0) {
+            ctx.fillStyle = (soul.color === 'blue') ? '#0066ff' : 'red'; 
+            ctx.font = '24px Arial'; ctx.textAlign = 'center'; ctx.fillText('❤', soul.x, soul.y + 8); 
+        }
+
+        // SPAWN ATTACCHI DINAMICI BASATI SULLA FASE ATTUALE
+        let cycle = currentTurn % 4;
+        if (defendFrames < currentDefendDuration - 60) {
+            if (cycle === 0) { if (defendFrames % 40 === 0) spawnProjectileBasedOnArea('pencil'); if (defendFrames % 90 === 0) spawnProjectileBasedOnArea('blaster'); }
+            else if (cycle === 1) { if (defendFrames % 50 === 0) spawnProjectileBasedOnArea(soul.color === 'blue' ? 'floor_pencil' : 'pencil'); }
+            else if (cycle === 2) { if (defendFrames % 40 === 0) spawnProjectileBasedOnArea('grade'); }
+            else if (cycle === 3) { if (defendFrames % 60 === 0) spawnProjectileBasedOnArea(soul.color === 'blue' ? 'floor_pencil' : 'blaster'); }
+        }
+
+        // UPDATE PROIETTILI
+        for (let i = pencils.length - 1; i >= 0; i--) {
+            let p = pencils[i]; p.x += p.dx; p.y += p.dy;
+            ctx.fillStyle = 'white'; ctx.fillRect(p.x, p.y, p.w, p.h); ctx.beginPath();
+            if (p.pointing === 'up') { ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + p.w / 2, p.y - 15); ctx.lineTo(p.x + p.w, p.y); ctx.fill(); ctx.fillRect(p.x, p.y + p.h + 2, p.w, 6); } 
+            else { ctx.moveTo(p.x, p.y + p.h); ctx.lineTo(p.x + p.w / 2, p.y + p.h + 15); ctx.lineTo(p.x + p.w, p.y + p.h); ctx.fill(); ctx.fillRect(p.x, p.y - 8, p.w, 6); }
+
+            let hitX = (sx + sr > p.x) && (sx - sr < p.x + p.w);
+            let hitY = (p.pointing === 'up') ? (sy + sr > p.y - 15) && (sy - sr < p.y + p.h + 10) : (sy + sr > p.y - 10) && (sy - sr < p.y + p.h + 15);
+            if (hitX && hitY) takeDamage();
+            if (p.x < -50 || p.x > canvas.width+50 || p.y < -50 || p.y > canvas.height+50) pencils.splice(i, 1);
+        }
+
+        for (let i = blasters.length - 1; i >= 0; i--) {
+            let b = blasters[i]; b.timer++;
+            ctx.save(); ctx.translate(b.x, b.y);
+            if (b.state === 'charge') ctx.translate(Math.random()*4-2, Math.random()*4-2);
+            let isFlashing = (b.state === 'charge' && b.timer > 35 && b.timer % 4 < 2);
+            ctx.fillStyle = isFlashing ? 'black' : 'white'; ctx.fillRect(-15, -10, 30, 20); 
+            ctx.fillStyle = isFlashing ? 'white' : 'black'; ctx.fillRect(-2, -8, 4, 16); 
+            ctx.strokeStyle = isFlashing ? 'black' : 'white'; ctx.lineWidth = 2; ctx.beginPath();
+            if(b.dir === 'R') { ctx.moveTo(10, -10); ctx.lineTo(20, -15); ctx.moveTo(10, 10); ctx.lineTo(20, 15); }
+            else if(b.dir === 'L') { ctx.moveTo(-10, -10); ctx.lineTo(-20, -15); ctx.moveTo(-10, 10); ctx.lineTo(-20, 15); }
+            else if(b.dir === 'D') { ctx.moveTo(-10, 10); ctx.lineTo(-15, 20); ctx.moveTo(10, 10); ctx.lineTo(15, 20); }
+            else if(b.dir === 'U') { ctx.moveTo(-10, -10); ctx.lineTo(-15, -20); ctx.moveTo(10, -10); ctx.lineTo(15, -20); }
+            ctx.stroke();
+
+            if (b.timer > 50 && b.state === 'charge') { b.state = 'fire'; b.timer = 0; } 
+            ctx.restore();
+
+            if (b.state === 'fire') {
+                let beamWidth = b.timer < 8 ? b.timer * 4 : (35 - (b.timer - 8) * 1.5);
+                if (beamWidth > 0) {
+                    ctx.fillStyle = 'white'; let beam = {l:0, r:0, t:0, b:0};
+                    if (b.dir === 'R') { ctx.fillRect(b.x + 16, b.y - beamWidth/2, 1000, beamWidth); beam={l:b.x+16, r:1000, t:b.y-beamWidth/2, b:b.y+beamWidth/2}; }
+                    else if (b.dir === 'L') { ctx.fillRect(-100, b.y - beamWidth/2, b.x + 84, beamWidth); beam={l:-100, r:b.x-16, t:b.y-beamWidth/2, b:b.y+beamWidth/2}; }
+                    else if (b.dir === 'D') { ctx.fillRect(b.x - beamWidth/2, b.y + 16, beamWidth, 1000); beam={l:b.x-beamWidth/2, r:b.x+beamWidth/2, t:b.y+16, b:1000}; }
+                    else { ctx.fillRect(b.x - beamWidth/2, -100, beamWidth, b.y + 84); beam={l:b.x-beamWidth/2, r:b.x+beamWidth/2, t:-100, b:b.y-16}; }
+                    
+                    if (b.timer > 4 && b.timer < 25) { if (sx + sr > beam.l + 2 && sx - sr < beam.r - 2 && sy + sr > beam.t + 2 && sy - sr < beam.b - 2) takeDamage(); }
+                }
+                if (b.timer > 35) blasters.splice(i, 1);
+            }
+        }
+
+        for (let i = grades.length - 1; i >= 0; i--) {
+            let g = grades[i]; g.x += g.vx; g.y += g.vy;
+            if (g.x <= 15 || g.x >= canvas.width - 15) g.vx *= -1;
+            if (g.y <= 15 || g.y >= canvas.height - 15) g.vy *= -1;
+            ctx.fillStyle = 'red'; ctx.font = 'bold 26px VT323'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(g.text, g.x, g.y);
+            if (Math.hypot(sx - g.x, sy - g.y) < sr + 10) takeDamage();
+            if (defendFrames > currentDefendDuration - 30) grades.splice(i, 1);
+        }
+
+        defendFrames++;
+        if (defendFrames > currentDefendDuration) { currentTurn++; danteBuff = false; showMainMenu(); } 
+        else { animationId = requestAnimationFrame(defendLoop); }
+    }
+
+    function takeDamage() {
+        if (invincibilityFrames > 0) return; playerHP -= 8; if (playerHP < 0) playerHP = 0; updateHP(); invincibilityFrames = 80;
+        if (playerHP === 0 && gameState !== 'GAME_OVER') {
+            gameState = 'GAME_OVER'; cancelAnimationFrame(animationId);
+            textArea.style.display = 'block'; canvas.style.display = 'none';
+            battleBox.style.width = window.innerWidth <= 600 ? '95%' : '540px'; battleBox.style.height = '160px';
+            textArea.innerHTML = "* Il tuo percorso scolastico finisce qui.<br>* Game Over.";
+        }
+    }
+
+    const mobileKeyMap = {'m-up':'ArrowUp','m-down':'ArrowDown','m-left':'ArrowLeft','m-right':'ArrowRight','m-z':'z','m-x':'x'};
+    for (const [id, key] of Object.entries(mobileKeyMap)) {
+        const btn = document.getElementById(id);
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[key] = true; processInput(key); });
+        btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[key] = false; });
+    }
+</script>
+</body>
+</html>
