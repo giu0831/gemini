@@ -222,7 +222,6 @@
     let blockNameChoice = false;
     let turnEvents = []; 
 
-    // MODIFICATA LA VELOCITÀ DEL CUORE DA 4.5 A 3.2 PER RENDERLA PIÙ MANEGGEVOLE E PRECISA
     let soul = { x: 150, y: 150, size: 12, speed: 3.2, color: 'red', vy: 0, gravity: 0.25, jump: -7.5, grounded: false };
     
     let keys = {};
@@ -230,14 +229,45 @@
     let defendFrames = 0; let currentDefendDuration = 450; let animationId;
     let targetX = 0; let targetDirection = 1; let targetReqId; let invincibilityFrames = 0; 
 
+    // ═══════════════════════════════════════════════════════════════
+    // CITAZIONI DEL BOSS — Barocco → Preromanticismo
+    // ═══════════════════════════════════════════════════════════════
     const bossQuotes = [
+        // Citazioni originali
         "\"Spero tu abbia studiato tutto il programma.\"",
         "\"La casualità è la vera essenza della vita!\"",
         "\"Non puoi prevedere la letteratura!\"",
         "\"La tua anima è un libro aperto. E io lo strappo.\"",
         "\"Preparati all'interrogazione a sorpresa!\"",
         "\"Non c'è scampo dall'ignoranza!\"",
-        "\"Vediamo se sai schivare questo!\""
+        "\"Vediamo se sai schivare questo!\"",
+
+        // BAROCCO
+        "\"È del poeta il fin la meraviglia... e questa situazione mi meraviglia!\"",
+        "\"Il Marino diceva: stupisci o muori. Tu stai facendo la seconda.\"",
+        "\"Il concettismo del Barocco? Tutto fumo. Come le tue speranze.\"",
+        "\"Anche Tasso fu rinchiuso. Sai perché? Anche lui non studiava.\"",
+        "\"L'Adone aveva ventimila versi. Quante righe hai scritto tu? Zero.\"",
+        "\"Il Seicento era un'epoca di eccessi. Anche questa punizione lo è.\"",
+
+        // ARCADIA & ILLUMINISMO
+        "\"Il giovin signore del Parini non faceva nulla. Tu lo imiti bene.\"",
+        "\"Goldoni riformò il teatro. Tu non riformi neanche il quaderno.\"",
+        "\"Alfieri volle, e volle sempre. Io voglio la tua bocciatura.\"",
+        "\"Candide credeva nel migliore dei mondi. Sbagliava. Come te.\"",
+        "\"Locke parlava di tabula rasa. Sei la prova vivente della teoria.\"",
+        "\"Beccaria difese i diritti degli imputati. Qui sei colpevole.\"",
+        "\"Parini scrisse l'Ode alla Musa. Tu non sai nemmeno cos'è una rima.\"",
+        "\"Il Metastasio scriveva melodrammi. Questo è il tuo.\"",
+
+        // PREROMANTICISMO
+        "\"Foscolo piangeva i morti. Io piangerò i tuoi voti.\"",
+        "\"A egregie cose il forte animo accendono. Il tuo è spento.\"",
+        "\"I Sepolcri di Foscolo parlano di memoria. Ricorda: sei bocciato.\"",
+        "\"Ossian era malinconico. Anche il tuo futuro scolastico lo è.\"",
+        "\"I canti di Ossian venivano dal buio. Come i tuoi voti.\"",
+        "\"Monti cambiò idea ad ogni regime. Tu non ne hai mai avuta una.\"",
+        "\"L'Ortis scrisse lettere disperate. Scrivine una ai tuoi genitori.\""
     ];
 
     function initGame() {
@@ -308,37 +338,174 @@
         else if (gameState === 'BOSS_DIALOGUE') { if (key === 'z' || key === 'Z' || key === 'Enter') startDefendPhase(); }
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // EASTER EGGS — tutti gli autori dal Barocco al Preromanticismo
+    // ═══════════════════════════════════════════════════════════════
     function checkNameEasterEggs() {
-        let name = playerName.trim().toUpperCase(); let msg = "È questo il tuo nome?"; blockNameChoice = false;
+        let name = playerName.trim().toUpperCase();
+        let msg = "È questo il tuo nome?";
+        blockNameChoice = false;
+
         const eggs = {
-            "SANS": { m: "no.", b: true }, "FLOWEY": { m: "Io ho già scelto quel nome.", b: true },
-            "TORIEL": { m: "Penso che dovresti pensare a un tuo nome, piccolo.", b: true },
-            "PAPYRUS": { m: "LO PERMETTO!!!", b: false }, "UNDYNE": { m: "Trova il tuo nome!", b: true },
-            "ALPHYS": { m: "N-non farlo.", b: true }, "METTATON": { m: "OOOOH!!! STAI PROMUOVENDO IL MIO BRAND?", b: false },
-            "ASGORE": { m: "Non puoi.", b: true }, "ASRIEL": { m: "...", b: true },
-            "GASTER": { m: "", b: true, reload: true }, "TOBY": { m: "Bau.", b: false },
-            "TEMMIE": { m: "hOI!", b: false }, "FRISK": { m: "Attenzione: questo renderà la tua vita un inferno.", b: false },
-            "CHARA": { m: "Il vero nome.", b: false }, "DANTE": { m: "Lasciate ogne speranza, voi ch'intrate...", b: false },
-            "AISA": { m: "Non osare rubarmi la cattedra!", b: true }
+            // ── ORIGINALI ──────────────────────────────────────────────
+            "SANS":      { m: "no.", b: true },
+            "FLOWEY":    { m: "Io ho già scelto quel nome.", b: true },
+            "TORIEL":    { m: "Penso che dovresti pensare a un tuo nome, piccolo.", b: true },
+            "PAPYRUS":   { m: "LO PERMETTO!!!", b: false },
+            "UNDYNE":    { m: "Trova il tuo nome!", b: true },
+            "ALPHYS":    { m: "N-non farlo.", b: true },
+            "METTATON":  { m: "OOOOH!!! STAI PROMUOVENDO IL MIO BRAND?", b: false },
+            "ASGORE":    { m: "Non puoi.", b: true },
+            "ASRIEL":    { m: "...", b: true },
+            "GASTER":    { m: "", b: true, reload: true },
+            "TOBY":      { m: "Bau.", b: false },
+            "TEMMIE":    { m: "hOI!", b: false },
+            "FRISK":     { m: "Attenzione: questo renderà la tua vita un inferno.", b: false },
+            "CHARA":     { m: "Il vero nome.", b: false },
+            "DANTE":     { m: "Lasciate ogne speranza, voi ch'intrate...", b: false },
+            "AISA":      { m: "Non osare rubarmi la cattedra!", b: true },
+
+            // ── BAROCCO ────────────────────────────────────────────────
+
+            // Giambattista Marino — padre del Barocco italiano
+            "MARINO":    { m: "È del poeta il fin la meraviglia.\nTu però non mi meravigli per niente.", b: false },
+            "MARINI":    { m: "È del poeta il fin la meraviglia.\nTu però non mi meravigli per niente.", b: false },
+
+            // Torquato Tasso — tra Rinascimento e Barocco
+            "TASSO":     { m: "Canto l'arme pietose e 'l capitano...\nNessuno però ti salverà.", b: false },
+            "GERUSALEM": { m: "Liberata? La tua anima non lo sarà.", b: false },
+            "ADONE":     { m: "Ventimila versi. E tu non ne sai nemmeno dieci.", b: true },
+
+            // Giambattista Basile — narrativa barocca napoletana
+            "BASILE":    { m: "Lo cunto de li cunti.\nQuesto è il cunto del tuo 2 in pagella.", b: false },
+
+            // Francesco Redi — scienziato e letterato barocco
+            "REDI":      { m: "Bacco in Toscana...\nAnche lui sapeva che alcune cose non si discutono.", b: false },
+
+            // ── ARCADIA ────────────────────────────────────────────────
+
+            // Pietro Metastasio — melodramma per eccellenza
+            "METASTASIO": { m: "Questa è una tragedia, non un melodramma.\nAnzi, è peggio.", b: false },
+
+            // Pietro Bembo — trattatista e teorico del linguaggio
+            "BEMBO":     { m: "La questione della lingua è aperta.\nLa questione del tuo voto è chiusa: 2.", b: true },
+
+            // ── ILLUMINISMO ────────────────────────────────────────────
+
+            // Giuseppe Parini — critica della nobiltà oziosa
+            "PARINI":    { m: "Il giovin signore passava i giorni nell'ozio.\nSto guardando te.", b: false },
+            "GIORNO":    { m: "Il Mattino, il Mezzogiorno, il Vespro, la Notte.\nTutte ore in cui avresti potuto studiare.", b: true },
+
+            // Carlo Goldoni — riforma della commedia
+            "GOLDONI":   { m: "Che commedia!\nE non nel senso di Dante.", b: false },
+
+            // Vittorio Alfieri — tragedia e libertà
+            "ALFIERI":   { m: "Volli, e volli sempre,\ne fortissimamente volli... bocciarti.", b: false },
+
+            // Cesare Beccaria — diritto penale e umanesimo
+            "BECCARIA":  { m: "Hai dei diritti.\nSono pochi, e qui non valgono molto.", b: false },
+            "DELITTI":   { m: "Dei delitti e delle pene.\nIl tuo delitto è non aver studiato.\nLa pena è questo combattimento.", b: true },
+
+            // Giambattista Vico — filosofia della storia
+            "VICO":      { m: "I corsi e ricorsi storici.\nTornerai a ripetere il programma.", b: false },
+
+            // Pietro Verri — Illuminismo lombardo, Il Caffè
+            "VERRI":     { m: "Il Caffè era un giornale illuminista.\nTu hai bisogno di un caffè molto forte.", b: false },
+
+            // Voltaire — Illuminismo francese
+            "VOLTAIRE":  { m: "Candide credeva nel migliore\ndei mondi possibili.\nEra un ingenuo. Come te.", b: false },
+            "CANDIDE":   { m: "Tutto va per il meglio nel migliore dei mondi...\nEscluso il tuo voto.", b: false },
+
+            // Jean-Jacques Rousseau — contratto sociale e buon selvaggio
+            "ROUSSEAU":  { m: "L'uomo nasce libero, ma ovunque\nè in catene. Le tue sono scolastiche.", b: false },
+
+            // Denis Diderot — Enciclopedia
+            "DIDEROT":   { m: "L'Encyclopédie conteneva tutto lo scibile umano.\nTu non contieni nemmeno la metà del programma.", b: false },
+            "ENCYCLOPE": { m: "Enciclopedia: tutto lo scibile umano.\nSe ne hai letta una pagina, si vede.", b: true },
+
+            // John Locke — empirismo e tabula rasa
+            "LOCKE":     { m: "Tabula rasa.\nSei la prova vivente della teoria.", b: false },
+
+            // Jonathan Swift — satira inglese
+            "SWIFT":     { m: "Gulliver sopravviveva in ogni situazione.\nTu non superi l'interrogazione.", b: false },
+            "GULLIVER":  { m: "Lillipuziani, Brobdingnag, Laputa...\nAnche Gulliver si trovava in posti assurdi. Come te ora.", b: false },
+
+            // Daniel Defoe — romanzo moderno inglese
+            "DEFOE":     { m: "Robinson era solo su un'isola deserta.\nAnche tu ti sentirai solo dopo questo voto.", b: false },
+            "ROBINSON":  { m: "Robinson costruì tutto da zero.\nTu non hai costruito nemmeno un ripasso.", b: true },
+
+            // Samuel Richardson — romanzo epistolare
+            "RICHARDSON": { m: "Pamela scrisse centinaia di lettere.\nTu non riesci a scrivere un tema.", b: false },
+
+            // Henry Fielding — romanzo comico inglese
+            "FIELDING":  { m: "Tom Jones era un ragazzo di buon cuore ma combinaguai.\nHo capito a chi ti ispiri.", b: false },
+
+            // Molière — commedia francese del '600
+            "MOLIERE":   { m: "Il malato immaginario eri tu\nall'ultima interrogazione.", b: false },
+            "MOLIÈRE":   { m: "Il malato immaginario eri tu\nall'ultima interrogazione.", b: false },
+
+            // Jean Racine — tragedia classica francese
+            "RACINE":    { m: "Fedra bruciava di passione.\nTu bruci di imbarazzo all'interrogazione.", b: false },
+
+            // Jean de La Fontaine — favole morali
+            "LAFONTAINE": { m: "La cicala cantò tutta l'estate.\nNon si preparò. Esattamente come te.", b: true },
+            "CICALA":    { m: "La cicala e la formica.\nIndovina quale sei tu.", b: true },
+
+            // ── PREROMANTICISMO ────────────────────────────────────────
+
+            // Ugo Foscolo — tra Illuminismo e Romanticismo
+            "FOSCOLO":   { m: "A egregie cose il forte animo accendono...\nIl tuo però è completamente spento.", b: false },
+            "ORTIS":     { m: "Jacopo scrisse lettere disperate.\nTu scrivi messaggi ai compagni per i compiti.", b: false },
+            "SEPOLCRI":  { m: "I Sepolcri parlano di memoria immortale.\nIl tuo voto verrà ricordato a lungo.", b: true },
+            "ZACINTO":   { m: "A Zacinto, patria lontana...\nAnche tu ti senti lontano dalla sufficienza.", b: false },
+
+            // Vincenzo Monti — trasformismo letterario
+            "MONTI":     { m: "Monti cambiò idea ad ogni regime.\nAlmeno lui aveva idee.\nTu no.", b: false },
+
+            // Melchiorre Cesarotti — traduttore di Ossian
+            "CESAROTTI": { m: "Tradusse Ossian portando in Italia\nil gusto per il sublime nordico.\nTu non sai tradurre nemmeno dal latino.", b: false },
+
+            // Ossian / James Macpherson — preromanticismo nordico
+            "OSSIAN":    { m: "I canti di Ossian venivano dal buio\ndei secoli.\nCome i tuoi voti vengono dal buio dell'ignoranza.", b: false },
+
+            // Edward Young — Night Thoughts, preromanticismo inglese
+            "YOUNG":     { m: "Young meditava sulla morte nelle notti buie.\nAnche tu dovresti meditare un po' di più.", b: false },
+
+            // Thomas Gray — Elegia scritta in un cimitero campestre
+            "GRAY":      { m: "Elegy written in a country churchyard.\nUna lapide ti aspetta nel registro.", b: false },
+
+            // Johann Wolfgang von Goethe — Sturm und Drang / preromanticismo
+            "GOETHE":    { m: "Le sofferenze del giovane Werther.\nStai per soffrire anche tu.", b: false },
+            "WERTHER":   { m: "Werther soffriva per amore.\nTu soffrirai per questo voto.", b: false },
+
+            // Friedrich Schiller — Sturm und Drang tedesco
+            "SCHILLER":  { m: "I masnadieri erano fuorilegge.\nAnche saltare le verifiche è fuori legge.", b: true },
+
+            // Jean-Paul / Richter — preromanticismo tedesco
+            "JEANPAUL":  { m: "Il Titan era un romanzo immenso.\nImmenso come la tua ignoranza.", b: true }
         };
 
         if (eggs[name]) {
             if (eggs[name].reload) { window.location.reload(); return; }
-            msg = eggs[name].m; blockNameChoice = eggs[name].b;
+            msg = eggs[name].m;
+            blockNameChoice = eggs[name].b;
         }
 
         document.getElementById('confirm-name-display').innerText = name;
         document.getElementById('confirm-message').innerText = msg;
         
         if (blockNameChoice) {
-            document.getElementById('opt-yes').style.display = 'none'; document.getElementById('opt-no').style.display = 'none';
-            setTimeout(() => { backToNaming(); playerName = ""; updateNamingUI(); }, 2500);
+            document.getElementById('opt-yes').style.display = 'none';
+            document.getElementById('opt-no').style.display = 'none';
+            setTimeout(() => { backToNaming(); playerName = ""; updateNamingUI(); }, 2800);
         } else {
-            document.getElementById('opt-yes').style.display = 'flex'; document.getElementById('opt-no').style.display = 'flex';
+            document.getElementById('opt-yes').style.display = 'flex';
+            document.getElementById('opt-no').style.display = 'flex';
             confirmSelection = 0; updateConfirmCursor();
         }
 
-        document.getElementById('naming-screen').style.display = 'none'; document.getElementById('confirm-screen').style.display = 'flex';
+        document.getElementById('naming-screen').style.display = 'none';
+        document.getElementById('confirm-screen').style.display = 'flex';
         gameState = 'CONFIRM_NAME';
     }
 
@@ -347,15 +514,23 @@
         document.getElementById('cursor-no').style.visibility = (confirmSelection === 1) ? 'visible' : 'hidden';
     }
     function backToNaming() {
-        document.getElementById('confirm-screen').style.display = 'none'; document.getElementById('naming-screen').style.display = 'flex'; gameState = 'NAMING';
+        document.getElementById('confirm-screen').style.display = 'none';
+        document.getElementById('naming-screen').style.display = 'flex';
+        gameState = 'NAMING';
     }
     function confirmName() {
         let finalName = playerName.trim().toUpperCase();
-        document.getElementById('save-name-ui').innerText = finalName; document.getElementById('stats-name-ui').innerText = finalName;
-        updateHP(); document.getElementById('confirm-screen').style.display = 'none'; document.getElementById('save-screen').style.display = 'flex'; gameState = 'SAVE_SCREEN';
+        document.getElementById('save-name-ui').innerText = finalName;
+        document.getElementById('stats-name-ui').innerText = finalName;
+        updateHP();
+        document.getElementById('confirm-screen').style.display = 'none';
+        document.getElementById('save-screen').style.display = 'flex';
+        gameState = 'SAVE_SCREEN';
     }
     function startGame() {
-        document.getElementById('save-screen').style.display = 'none'; document.getElementById('game-container').style.display = 'flex'; showMainMenu();
+        document.getElementById('save-screen').style.display = 'none';
+        document.getElementById('game-container').style.display = 'flex';
+        showMainMenu();
     }
     function updateHP() { hpText.innerText = `${playerHP} / ${MAX_HP}`; hpBarFill.style.width = (playerHP / MAX_HP * 100) + '%'; }
     function updateButtons() { buttons.forEach((btn, i) => btn.className = i === selectedButton ? 'action-btn active' : 'action-btn'); }
@@ -364,7 +539,8 @@
         gameState = 'MAIN_MENU'; textArea.style.display = 'block';
         textArea.innerHTML = '* La PROF. AISA sta preparando un attacco imprevedibile.';
         targetBar.style.display = 'none'; canvas.style.display = 'none';
-        battleBox.style.height = '160px'; battleBox.style.width = window.innerWidth <= 600 ? '95%' : '540px';
+        battleBox.style.height = '160px';
+        battleBox.style.width = window.innerWidth <= 600 ? '95%' : '540px';
         updateButtons();
     }
 
@@ -373,11 +549,16 @@
     function selectAction() {
         if (selectedButton === 0) startTargeting();
         else if (selectedButton === 1) {
-            gameState = 'MENU_SELECTION'; menuOptions = ["* Controlla", "* Chiedi un 6", "* Recita Dante"]; menuSelectionIndex = 0; updateMenuSelectionUI();
+            gameState = 'MENU_SELECTION';
+            menuOptions = ["* Controlla", "* Chiedi un 6", "* Recita Dante"];
+            menuSelectionIndex = 0; updateMenuSelectionUI();
         } else if (selectedButton === 2) {
-            gameState = 'MENU_SELECTION'; menuOptions = ["* Gomma (Cura 50 HP)"]; menuSelectionIndex = 0; updateMenuSelectionUI();
+            gameState = 'MENU_SELECTION';
+            menuOptions = ["* Gomma (Cura 50 HP)"];
+            menuSelectionIndex = 0; updateMenuSelectionUI();
         } else if (selectedButton === 3) {
-            textArea.innerHTML = "* La campanella non è ancora suonata. Scordalo."; setTimeout(bossTurn, 2000);
+            textArea.innerHTML = "* La campanella non è ancora suonata. Scordalo.";
+            setTimeout(bossTurn, 2000);
         }
     }
 
@@ -419,13 +600,33 @@
             slash.style.display = 'none'; let dmgText = document.getElementById('damage-text');
             dmgText.innerText = "MISS"; dmgText.classList.add('miss-text'); dmgText.style.display = 'block';
             bossImg.classList.add('dodging'); bossPlac.classList.add('dodging');
-            setTimeout(() => { dmgText.style.display = 'none'; dmgText.classList.remove('miss-text'); bossImg.classList.remove('dodging'); bossPlac.classList.remove('dodging'); bossTurn(); }, 1000);
+            setTimeout(() => {
+                dmgText.style.display = 'none'; dmgText.classList.remove('miss-text');
+                bossImg.classList.remove('dodging'); bossPlac.classList.remove('dodging');
+                bossTurn();
+            }, 1000);
         }, 400);
     }
 
+    // Coda mescolata per citazioni senza ripetizioni
+    let quoteQueue = [];
+    function getNextQuote() {
+        if (quoteQueue.length === 0) {
+            // Rimescola tutte le citazioni quando la coda si svuota
+            quoteQueue = [...bossQuotes];
+            for (let i = quoteQueue.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [quoteQueue[i], quoteQueue[j]] = [quoteQueue[j], quoteQueue[i]];
+            }
+        }
+        return quoteQueue.pop();
+    }
+
     function bossTurn() {
-        gameState = 'BOSS_DIALOGUE'; targetBar.style.display = 'none'; textArea.style.display = 'block'; bossBubble.style.display = 'block';
-        bossBubble.innerText = bossQuotes[currentTurn % bossQuotes.length]; textArea.innerHTML = "* (Preparati al caos...)";
+        gameState = 'BOSS_DIALOGUE'; targetBar.style.display = 'none'; textArea.style.display = 'block';
+        bossBubble.style.display = 'block';
+        bossBubble.innerText = getNextQuote();
+        textArea.innerHTML = "* (Preparati al caos...)";
     }
 
     function changeSoulColor(color) {
@@ -443,14 +644,12 @@
     function startDefendPhase() {
         gameState = 'DEFEND'; bossBubble.style.display = 'none'; textArea.style.display = 'none'; canvas.style.display = 'block';
         
-        // Setup iniziale
         currentDefendDuration = 400 + Math.floor(Math.random() * 200); 
         resizeBox(300, 300); soul.color = 'red'; soul.x = 150; soul.y = 150;
         defendFrames = 0; blasters = []; pencils = []; grades = []; turnEvents = [];
         invincibilityFrames = 0; 
 
-        // GENERAZIONE RANDOMICA DEGLI EVENTI NELL'ARENA
-        let numEvents = 2 + Math.floor(Math.random() * 3); // Ridotto un pochino il numero di eventi a sorpresa
+        let numEvents = 2 + Math.floor(Math.random() * 3);
         for(let i=0; i<numEvents; i++) {
             let frame = 60 + Math.floor(Math.random() * (currentDefendDuration - 120));
             let rType = Math.random();
@@ -460,7 +659,7 @@
                     if (rType < 0.3) {
                         changeSoulColor(soul.color === 'red' ? 'blue' : 'red');
                     } else if (rType < 0.7) {
-                        let nw = 180 + Math.random() * 270; // Non stringe troppo
+                        let nw = 180 + Math.random() * 270;
                         let nh = 180 + Math.random() * 170;
                         resizeBox(nw, nh);
                     } else {
@@ -476,7 +675,6 @@
         requestAnimationFrame(defendLoop);
     }
 
-    // Curva di difficoltà bilanciata
     function getSpeedModifier() { return danteBuff ? 0.7 : 1 + (currentTurn * 0.05); }
 
     function spawnProjectileBasedOnArea(type) {
@@ -492,47 +690,35 @@
             pencils.push({ x: cw + 20, y: ch - ph - 5, w: 16, h: ph, dx: -2.5 * getSpeedModifier(), dy: 0, pointing: 'up' });
         }
         else if (type === 'blaster') {
-            // I BLASTER PUNTANO AL CUORE
             let bx = Math.random() < 0.5 ? -40 : cw + 40;
             let by = Math.random() * ch;
             if (Math.random() < 0.5) { bx = Math.random() * cw; by = Math.random() < 0.5 ? -40 : ch + 40; }
-            
-            // Calcolo angolo
             let angle = Math.atan2(soul.y - by, soul.x - bx);
             blasters.push({ x: bx, y: by, angle: angle, state: 'charge', timer: 0 });
         }
         else if (type === 'grade') {
-            // I VOTI PUNTANO ALL'ANIMA
             let gx = Math.random() < 0.5 ? -20 : cw + 20;
             let gy = Math.random() * ch;
             if (Math.random() < 0.5) { gx = Math.random() * cw; gy = Math.random() < 0.5 ? -20 : ch + 20; }
-            
             let angle = Math.atan2(soul.y - gy, soul.x - gx);
-            // Velocità scalata per essere leggibile
             let speed = (2.5 + Math.random() * 1.5) * getSpeedModifier();
-            let vx = Math.cos(angle) * speed;
-            let vy = Math.sin(angle) * speed;
-            
-            grades.push({ x: gx, y: gy, vx: vx, vy: vy, text: Math.random()>0.5?"2":"4" });
+            grades.push({ x: gx, y: gy, vx: Math.cos(angle)*speed, vy: Math.sin(angle)*speed, text: Math.random()>0.5?"2":"4" });
         }
     }
 
     function defendLoop() {
         if (gameState !== 'DEFEND') return;
         
-        // AGGIORNA DIMENSIONI CANVAS DINAMICAMENTE
         if (canvas.width !== battleBox.clientWidth || canvas.height !== battleBox.clientHeight) {
             canvas.width = battleBox.clientWidth; canvas.height = battleBox.clientHeight;
         }
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // ESEGUI EVENTI PROGRAMMATI
         turnEvents.forEach(ev => { if (ev.f === defendFrames) ev.action(); });
 
         let spd = keys['x'] ? soul.speed/2 : soul.speed;
 
-        // FISICA ANIMA
         if (soul.color === 'red') {
             let dx = 0; let dy = 0;
             if (keys['ArrowLeft'] || keys['a']) dx -= 1; if (keys['ArrowRight'] || keys['d']) dx += 1;
@@ -548,7 +734,6 @@
             soul.y += soul.vy;
         }
 
-        // CONFINI DINAMICI
         if (soul.x < 15) soul.x = 15; if (soul.x > canvas.width - 15) soul.x = canvas.width - 15;
         if (soul.y < 15) { soul.y = 15; if(soul.color==='blue') soul.vy = 0; }
         if (soul.y >= canvas.height - 15) { 
@@ -557,14 +742,12 @@
 
         if (invincibilityFrames > 0) invincibilityFrames--;
 
-        // DISEGNO ANIMA
         let sx = soul.x; let sy = soul.y; let sr = 6;
         if (invincibilityFrames === 0 || Math.floor(invincibilityFrames / 4) % 2 === 0) {
             ctx.fillStyle = (soul.color === 'blue') ? '#0066ff' : 'red'; 
             ctx.font = '24px Arial'; ctx.textAlign = 'center'; ctx.fillText('❤', sx, sy + 8); 
         }
 
-        // SPAWN DEGLI ATTACCHI (Bilanciato per non diventare un muro insuperabile)
         let spawnRate = Math.max(25, 45 - currentTurn * 2); 
         if (defendFrames % spawnRate === 0) {
             let rand = Math.random();
@@ -576,56 +759,35 @@
             spawnProjectileBasedOnArea('floor_pencil'); 
         }
 
-        // AGGIORNAMENTO MATITE
         for (let i = pencils.length - 1; i >= 0; i--) {
             let p = pencils[i]; p.x += p.dx; p.y += p.dy;
             ctx.fillStyle = 'white'; ctx.fillRect(p.x, p.y, p.w, p.h); ctx.beginPath();
             if (p.pointing === 'up') { ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + p.w / 2, p.y - 15); ctx.lineTo(p.x + p.w, p.y); ctx.fill(); ctx.fillRect(p.x, p.y + p.h + 2, p.w, 6); } 
             else { ctx.moveTo(p.x, p.y + p.h); ctx.lineTo(p.x + p.w / 2, p.y + p.h + 15); ctx.lineTo(p.x + p.w, p.y + p.h); ctx.fill(); ctx.fillRect(p.x, p.y - 8, p.w, 6); }
-
             let hitX = (sx + sr > p.x) && (sx - sr < p.x + p.w);
             let hitY = (p.pointing === 'up') ? (sy + sr > p.y - 15) && (sy - sr < p.y + p.h + 10) : (sy + sr > p.y - 10) && (sy - sr < p.y + p.h + 15);
             if (hitX && hitY) takeDamage();
             if (p.x < -50 || p.x > canvas.width+50 || p.y < -50 || p.y > canvas.height+50) pencils.splice(i, 1);
         }
 
-        // AGGIORNAMENTO BLASTER (Ora danno più tempo di reazione)
         for (let i = blasters.length - 1; i >= 0; i--) {
             let b = blasters[i]; b.timer++;
             ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.angle); 
-            
-            if (b.state === 'charge') {
-                // Vibrazione leggera
-                ctx.translate(Math.random()*2-1, Math.random()*2-1);
-                // Linea di avvertimento sottile
-                ctx.fillStyle = 'rgba(255, 0, 0, 0.2)';
-                ctx.fillRect(15, -1, 1000, 2);
-            }
-            
+            if (b.state === 'charge') { ctx.translate(Math.random()*2-1, Math.random()*2-1); ctx.fillStyle = 'rgba(255, 0, 0, 0.2)'; ctx.fillRect(15, -1, 1000, 2); }
             let isFlashing = (b.state === 'charge' && b.timer > 45 && b.timer % 4 < 2);
-            
             ctx.fillStyle = isFlashing ? 'black' : 'white';
             ctx.beginPath(); ctx.ellipse(-10, 0, 15, 20, 0, 0, Math.PI*2); ctx.fill(); 
             ctx.fillRect(-10, -12, 28, 24); 
-            
             ctx.fillStyle = isFlashing ? 'white' : 'black';
-            ctx.fillRect(4, -8, 8, 5); 
-            ctx.fillRect(4, 3, 8, 5);  
-            
-            // IL BLASTER ORA CI METTE 60 FRAME A CARICARE INVECE DI 45
+            ctx.fillRect(4, -8, 8, 5); ctx.fillRect(4, 3, 8, 5);
             if (b.timer > 60 && b.state === 'charge') { b.state = 'fire'; b.timer = 0; }
-
             if (b.state === 'fire') {
                 let beamWidth = b.timer < 8 ? b.timer * 5 : (40 - (b.timer - 8) * 2);
                 if (beamWidth > 0) {
-                    ctx.fillStyle = 'white';
-                    ctx.fillRect(15, -beamWidth/2, 2000, beamWidth); 
-
+                    ctx.fillStyle = 'white'; ctx.fillRect(15, -beamWidth/2, 2000, beamWidth); 
                     let dx = sx - b.x; let dy = sy - b.y;
                     let localX = dx * Math.cos(-b.angle) - dy * Math.sin(-b.angle);
                     let localY = dx * Math.sin(-b.angle) + dy * Math.cos(-b.angle);
-
-                    // I-Frame più permissivi
                     if (b.timer > 4 && b.timer < 25) { 
                         if (localX > 10 && Math.abs(localY) < (beamWidth/2) + sr) takeDamage(); 
                     }
@@ -635,7 +797,6 @@
             ctx.restore();
         }
 
-        // AGGIORNAMENTO VOTI A RICERCA
         for (let i = grades.length - 1; i >= 0; i--) {
             let g = grades[i]; g.x += g.vx; g.y += g.vy;
             ctx.fillStyle = 'red'; ctx.font = 'bold 28px VT323'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(g.text, g.x, g.y);
@@ -648,13 +809,11 @@
         else { animationId = requestAnimationFrame(defendLoop); }
     }
 
-    // DANNO RIDOTTO E I-FRAMES ALZATI A 60
     function takeDamage() {
         if (invincibilityFrames > 0) return; 
         playerHP -= 10; 
         if (playerHP < 0) playerHP = 0; updateHP(); 
-        invincibilityFrames = 60; // 1 secondo intero di invincibilità (bilanciato!)
-        
+        invincibilityFrames = 60;
         if (playerHP === 0 && gameState !== 'GAME_OVER') {
             gameState = 'GAME_OVER'; cancelAnimationFrame(animationId);
             textArea.style.display = 'block'; canvas.style.display = 'none';
