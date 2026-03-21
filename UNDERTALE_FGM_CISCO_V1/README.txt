@@ -1,0 +1,2 @@
+☕ Java — citazioni: JVM che mangia RAM, OutOfMemoryError, garbage collector, 47 import inutili, AbstractFactoryBuilderObserverBean... Easter egg: JAVA, JVM, JAVAC, SPRING, MAVEN, LOMBOK, JUNIT
+🔷 C# — citazioni: Object reference not set, async senza await, CS0103, LINQ negato. Easter egg: CSHARP, DOTNET, VSCODE, UNITY, LINQ, ASYNC, NUGET
