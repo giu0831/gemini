@@ -1,731 +1,787 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Sparkles, Star, RefreshCw, History, User, Info, X, Filter, ArrowDownUp, FastForward, CheckCircle, AlertCircle, Search, Sword, Target, Trophy, Zap, Ghost, RotateCcw } from 'lucide-react';
-
-// --- DATA & CONSTANTS ---
-
-const CHARACTERS = {
-  fiveStar: [
-    { 
-      id: 'emanuela', 
-      name: 'Emanuela Aisa', 
-      element: 'Ice', 
-      path: 'Erudition', 
-      img: 'https://lh3.googleusercontent.com/a-/ALV-UjX5WaAKPyFOdPE72EV2dbV2IvSo1Xbdv12mYFqvBUM9gWaaMoRU=s75-c',
-      desc: "Donna più potente al mondo, il suo sguardo è in grado di congelarti.",
-      baseAtk: 1200
-    },
-    { 
-      id: 'jack', 
-      name: 'Jack la Furia', 
-      element: 'Fire', 
-      path: 'Destruction', 
-      img: 'https://lh3.googleusercontent.com/a-/ALV-UjUSymyz-BIoIob8NGEU2STB4zWgfTju-WPYs-XcWJACeWtFpCc=s75-c',
-      desc: "Il distruttore di mondi, attraverso green screen e cisco packet tracer sterminerà tutti.",
-      baseAtk: 1150
-    },
-    { 
-      id: 'falleri', 
-      name: 'Falleri', 
-      element: 'Wind', 
-      path: 'Hunt', 
-      img: 'https://lh3.googleusercontent.com/a-/ALV-UjVvAB7LBrk37e4FvlVr7Ecaadp8OXyFUYev7JCgAN3LPhcxoV4t=s75-c',
-      desc: "Cacciatore esperto di codici, tirando fuori i suoi codici, spazzerà via tutta la tua speranza di fare qualcosa di decente.",
-      baseAtk: 1300
-    },
-    { 
-      id: 'nicolucci', 
-      name: 'Nicolucci', 
-      element: 'Quantum', 
-      path: 'Nihility', 
-      img: 'https://lh3.googleusercontent.com/a-/ALV-UjW3bdf3KTVMa5Rot0uN61bfOX2Wn5zaO1Pa1jmV5-Rb_q8dcLhm=s75-c',
-      desc: "Colei che ha probabilmente vissuto nella seconda guerra mondiale, bipolare come acqua e olio.",
-      baseAtk: 1100
-    }
-  ],
-  fourStar: [
-    { name: 'Quadernone', element: 'Physical', path: 'Preservation', desc: "Un tomo antico capace di proteggere dagli appunti mancanti.", baseAtk: 400 },
-    { name: 'Commentino su Parini', element: 'Wind', path: 'Erudition', desc: "Analisi tagliente del 'Giorno'. Provoca danni da noia ai nemici.", baseAtk: 450 },
-    { name: 'Commentino su Boccaccio', element: 'Physical', path: 'Nihility', desc: "Storie di pestilenza che applicano DoT (Danni nel Tempo).", baseAtk: 420 },
-    { name: 'Commentino su Petrarca', element: 'Ice', path: 'Remembrance', desc: "Laura non c'è, è andata via. Congela i sentimenti.", baseAtk: 410 },
-    { name: 'Commentino su Dante', element: 'Fire', path: 'Destruction', desc: "Lasciate ogni speranza. Infligge danni da fuoco infernale.", baseAtk: 480 },
-    { name: 'Codice Funzionante', element: 'Lightning', path: 'Erudition', desc: "Una rarità assoluta. Compila al primo colpo. Shocka gli sviluppatori.", baseAtk: 600 },
-    { name: 'Thepsit', element: 'Quantum', path: 'Hunt', desc: "Entità misteriosa che colpisce i bug nel codice quantistico.", baseAtk: 550 },
-    { name: 'Compiti di Inglese', element: 'Physical', path: 'Nihility', desc: "Grammar Nazi. Riduce la difesa nemica correggendo la pronuncia.", baseAtk: 380 },
-    { name: 'Progetto Falleri', element: 'Imaginary', path: 'Harmony', desc: "Un'idea così complessa che esiste solo nell'immaginazione. Buffa la squadra.", baseAtk: 350 },
-    { name: 'ELDEGOOOOO', element: 'Fire', path: 'Destruction', desc: "Urlo di battaglia leggendario. Aumenta l'ATK di tutti gli alleati.", baseAtk: 500 },
-    { name: 'Busatti', element: 'Wind', path: 'Abundance', desc: "Portatore di saggezza e voti alti. Cura lo stress scolastico.", baseAtk: 300 }
-  ],
-  threeStar: [
-    'Spada Arrugginita', 'Bastone da Passeggio', 'Fionda Spaziale', 
-    'Manuale di Cucina', 'Chiave Inglese', 'Sasso Fortunato'
-  ]
-};
-
-const ENEMIES = [
-  { name: "Verifica a Sorpresa", hp: 5000, reward: 160, color: "bg-red-500" },
-  { name: "Connessione Lenta", hp: 12000, reward: 320, color: "bg-yellow-500" },
-  { name: "Bug di Produzione", hp: 30000, reward: 600, color: "bg-purple-600" },
-  { name: "Professore Severo", hp: 80000, reward: 1000, color: "bg-gray-700" },
-  { name: "Il Preside", hp: 250000, reward: 5000, color: "bg-rose-900" }
-];
-
-const MISSION_POOL = [
-  { text: "Effettua 1 Evocazione", target: 1, type: 'pulls', reward: 160 },
-  { text: "Effettua 10 Evocazioni", target: 10, type: 'pulls', reward: 1600 },
-  { text: "Sconfiggi 1 Nemico", target: 1, type: 'kills', reward: 300 },
-  { text: "Sconfiggi 3 Nemici", target: 3, type: 'kills', reward: 800 },
-  { text: "Clicca 50 volte in battaglia", target: 50, type: 'clicks', reward: 200 },
-  { text: "Clicca 200 volte in battaglia", target: 200, type: 'clicks', reward: 600 },
-  { text: "Ottieni un 4 stelle o superiore", target: 1, type: 'rare_pull', reward: 500 },
-];
-
-// --- HELPER COMPONENTS ---
-
-const StarDisplay = ({ count }) => (
-  <div className="flex gap-0.5 justify-center mt-1">
-    {[...Array(count)].map((_, i) => (
-      <Star key={i} size={14} className="fill-yellow-400 text-yellow-400" />
-    ))}
-  </div>
-);
-
-const Card = ({ item, animate = false, minimal = false, onClick, isSelected = false }) => {
-  const is5Star = item.rarity === 5;
-  const is4Star = item.rarity === 4;
-  
-  let borderClass = isSelected ? 'border-white ring-2 ring-blue-400' : (is5Star ? 'border-yellow-400' : is4Star ? 'border-purple-400' : 'border-blue-400');
-  let bgClass = is5Star ? 'bg-yellow-900/60' : is4Star ? 'bg-purple-900/50' : 'bg-blue-900/40';
-  
-  if (minimal) {
-     return (
-        <div 
-          onClick={() => onClick && onClick(item)}
-          className={`relative w-24 h-32 rounded-lg border ${borderClass} ${bgClass} flex flex-col items-center justify-center p-1 overflow-hidden transition-all hover:scale-105 cursor-pointer active:scale-95 ${isSelected ? 'scale-105 shadow-xl shadow-blue-500/20' : ''}`}
-        >
-            {item.img ? (
-                <img src={item.img} className="w-12 h-12 rounded-full object-cover mb-2 border border-white/20" referrerPolicy="no-referrer" />
-            ) : (
-                <div className="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center text-lg font-bold mb-2">{item.name[0]}</div>
-            )}
-            <h3 className="text-[10px] text-center leading-tight font-bold text-white line-clamp-2">{item.name}</h3>
-            <div className="flex gap-0.5 mt-1">
-                {[...Array(item.rarity)].map((_,i) => <div key={i} className="w-1 h-1 rounded-full bg-yellow-400"></div>)}
-            </div>
-            {isSelected && <div className="absolute top-1 right-1 bg-green-500 rounded-full p-0.5"><CheckCircle size={10} /></div>}
-        </div>
-     )
-  }
-
-  // Full Card Render
-  return (
-    <div className={`
-      relative w-32 h-48 sm:w-40 sm:h-64 rounded-xl border-2 ${is5Star ? 'border-yellow-400' : is4Star ? 'border-purple-400' : 'border-blue-400'} 
-      ${is5Star ? 'shadow-yellow-500/50' : is4Star ? 'shadow-purple-500/30' : 'shadow-blue-500/20'}
-      bg-gray-800 shadow-lg flex flex-col items-center justify-between p-2 overflow-hidden
-      transition-all duration-700 cubic-bezier(0.34, 1.56, 0.64, 1)
-      ${animate ? 'scale-100 opacity-100 translate-y-0' : 'scale-90 opacity-0 translate-y-10'}
-    `}>
-      <div className={`absolute inset-0 opacity-30 blur-xl ${is5Star ? 'bg-yellow-500' : is4Star ? 'bg-purple-500' : 'bg-blue-500'}`}></div>
-      <div className="z-10 w-full text-center mt-2">
-        {item.img ? (
-           <div className={`mx-auto w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 ${is5Star ? 'border-yellow-300' : 'border-purple-300'} overflow-hidden shadow-md`}>
-             <img src={item.img} alt={item.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-           </div>
-        ) : (
-          <div className="mx-auto w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-black/40 flex items-center justify-center text-2xl font-bold opacity-70">
-            {item.name[0]}
-          </div>
-        )}
-      </div>
-      <div className="z-10 text-center w-full mb-2">
-        <h3 className="font-bold text-sm sm:text-base leading-tight text-white">{item.name}</h3>
-        <StarDisplay count={item.rarity} />
-        {item.element && <p className="text-xs text-gray-400 mt-1 uppercase tracking-wider">{item.element}</p>}
-      </div>
-      {is5Star && item.pityResult && (
-        <div className={`absolute top-2 left-2 text-[10px] px-1.5 py-0.5 rounded font-bold z-20 border ${item.pityResult === 'win' ? 'bg-green-600 border-green-400 text-white' : 'bg-red-900 border-red-500 text-red-200'}`}>
-            {item.pityResult === 'win' ? 'WIN' : 'PERSO'}
-        </div>
-      )}
-      {item.isNew && (
-        <div className="absolute top-2 right-2 bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded animate-pulse z-20">NEW</div>
-      )}
-    </div>
-  );
-};
-
-// --- MAIN APP COMPONENT ---
-
-export default function GachaGame() {
-  const [activeTab, setActiveTab] = useState('gacha'); 
-  const [currency, setCurrency] = useState(16000); 
-  const [activeBannerIndex, setActiveBannerIndex] = useState(0);
-  const [inventory, setInventory] = useState([]);
-  
-  // Pity & Gacha State
-  const [pityCounter, setPityCounter] = useState(0);
-  const [guaranteed, setGuaranteed] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [animationPhase, setAnimationPhase] = useState('idle');
-  const [currentPullResults, setCurrentPullResults] = useState([]);
-  const [highestRarityInPull, setHighestRarityInPull] = useState(3);
-  const animationTimeouts = useRef([]);
-
-  // UI State
-  const [showInventory, setShowInventory] = useState(false);
-  const [sortOrder, setSortOrder] = useState('recent');
-  const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
-
-  // --- BATTLE & MISSIONS STATE ---
-  const [team, setTeam] = useState([]); 
-  const [enemyLevel, setEnemyLevel] = useState(0);
-  const [currentEnemyHp, setCurrentEnemyHp] = useState(ENEMIES[0].hp);
-  const [lastAttackTime, setLastAttackTime] = useState(0);
-  
-  // Missions
-  const [missionProgress, setMissionProgress] = useState({ pulls: 0, kills: 0, clicks: 0, rare_pull: 0 });
-  const [activeMissions, setActiveMissions] = useState([]);
-  const [claimedMissionIds, setClaimedMissionIds] = useState([]); // Array of IDs in the current batch
-
-  const activeBannerChar = CHARACTERS.fiveStar[activeBannerIndex];
-  const currentEnemy = ENEMIES[enemyLevel % ENEMIES.length];
-
-  // Initialize Missions
-  useEffect(() => {
-    generateNewMissions();
-  }, []);
-
-  const generateNewMissions = () => {
-    // Pick 3 random missions
-    const shuffled = [...MISSION_POOL].sort(() => 0.5 - Math.random());
-    const selected = shuffled.slice(0, 3).map((m, i) => ({ ...m, uniqueId: Date.now() + i }));
-    setActiveMissions(selected);
-    setClaimedMissionIds([]); // Reset claimed for new batch
-    setMissionProgress({ pulls: 0, kills: 0, clicks: 0, rare_pull: 0 }); // Reset progress
-  };
-
-  const resetCurrency = () => setCurrency(16000);
-
-  // --- HELPERS ---
-  const addToInventory = (items) => {
-    setInventory(prev => [...prev, ...items]);
-    setMissionProgress(prev => ({ 
-        ...prev, 
-        pulls: prev.pulls + items.length,
-        rare_pull: prev.rare_pull + items.filter(i => i.rarity >= 4).length
-    }));
-  };
-
-  const getSortedInventory = () => {
-    let sorted = [...inventory];
-    if (sortOrder === 'rarity_desc') sorted.sort((a, b) => b.rarity - a.rarity || b.obtainedAt - a.obtainedAt);
-    else if (sortOrder === 'rarity_asc') sorted.sort((a, b) => a.rarity - b.rarity || b.obtainedAt - a.obtainedAt);
-    else sorted.sort((a, b) => b.obtainedAt - a.obtainedAt);
-    return sorted;
-  };
-
-  // --- BATTLE LOGIC ---
-  const teamDps = useMemo(() => {
-    return team.reduce((acc, char) => acc + (char.baseAtk || 50), 0);
-  }, [team]);
-
-  const attackEnemy = (isAuto = false) => {
-    const dmg = Math.floor(teamDps * (isAuto ? 0.2 : 1) * (0.9 + Math.random() * 0.2)); 
-    
-    if (!isAuto) {
-        setMissionProgress(prev => ({...prev, clicks: prev.clicks + 1}));
-    }
-
-    setCurrentEnemyHp(prev => {
-      const newHp = prev - dmg;
-      if (newHp <= 0) {
-        const reward = currentEnemy.reward * (1 + Math.floor(enemyLevel / ENEMIES.length));
-        setCurrency(c => c + reward);
-        setEnemyLevel(l => l + 1);
-        setMissionProgress(mp => ({...mp, kills: mp.kills + 1}));
-        return ENEMIES[(enemyLevel + 1) % ENEMIES.length].hp * (1 + ((enemyLevel + 1) * 0.5)); 
-      }
-      return newHp;
-    });
-    setLastAttackTime(Date.now());
-  };
-
-  useEffect(() => {
-    if (activeTab !== 'battle' || team.length === 0) return;
-    const interval = setInterval(() => attackEnemy(true), 1000);
-    return () => clearInterval(interval);
-  }, [activeTab, team, enemyLevel]);
-
-  const toggleTeamMember = (char) => {
-    if (team.find(c => c.obtainedAt === char.obtainedAt)) {
-      setTeam(team.filter(c => c.obtainedAt !== char.obtainedAt));
-    } else {
-      if (team.length < 4) setTeam([...team, char]);
-      else alert("Squadra al completo! Rimuovi un membro prima.");
-    }
-  };
-
-  useEffect(() => {
-     if (team.length === 0 && inventory.length > 0) {
-        const best = [...inventory].filter(i => i.rarity > 3).sort((a,b) => b.rarity - a.rarity).slice(0, 4);
-        setTeam(best);
-     }
-  }, [inventory.length]);
-
-
-  // --- GACHA LOGIC ---
-  const pull = (count) => {
-    if (currency < count * 160) { alert("Non hai abbastanza Giada!"); return; }
-    setCurrency(prev => prev - (count * 160));
-    
-    let results = [];
-    let newPity = pityCounter;
-    let newGuaranteed = guaranteed;
-    let maxRarity = 3;
-
-    for (let i = 0; i < count; i++) {
-      newPity++;
-      const rand = Math.random();
-      let fiveStarProb = newPity > 73 ? 0.006 + (newPity - 73) * 0.06 : 0.006;
-      if (newPity >= 90) fiveStarProb = 1;
-
-      if (rand < fiveStarProb) {
-        maxRarity = 5; newPity = 0;
-        let char;
-        if (newGuaranteed || Math.random() < 0.5) {
-          char = { ...activeBannerChar, rarity: 5, type: 'char', pityResult: 'win' };
-          newGuaranteed = false;
-        } else {
-          const pool = CHARACTERS.fiveStar.filter(c => c.id !== activeBannerChar.id);
-          char = { ...pool[Math.floor(Math.random() * pool.length)], rarity: 5, type: 'char', pityResult: 'lose' };
-          newGuaranteed = true;
-        }
-        results.push(char);
-      } else if (rand < 0.057) {
-        if (maxRarity < 4) maxRarity = 4;
-        const pool = CHARACTERS.fourStar;
-        results.push({ ...pool[Math.floor(Math.random() * pool.length)], rarity: 4, type: 'char' });
-      } else {
-        const pool = CHARACTERS.threeStar;
-        results.push({ name: pool[Math.floor(Math.random() * pool.length)], rarity: 3, type: 'weapon', baseAtk: 10 });
-      }
-    }
-
-    const timestamp = Date.now();
-    const finalResults = results.map((item, i) => ({ 
-        ...item, 
-        obtainedAt: timestamp + i, 
-        isNew: !inventory.some(inv => inv.name === item.name) && item.rarity > 3 
-    }));
-
-    setPityCounter(newPity);
-    setGuaranteed(newGuaranteed);
-    setHighestRarityInPull(maxRarity);
-    setCurrentPullResults(finalResults);
-    addToInventory(finalResults);
-    
-    // Animation trigger
-    setIsAnimating(true);
-    setAnimationPhase('travel');
-    
-    // Clear old timeouts
-    animationTimeouts.current.forEach(clearTimeout);
-    
-    // Set sequence for SMOOTH overlap
-    animationTimeouts.current = [
-        // 0s: Travel (Meteor)
-        setTimeout(() => setAnimationPhase('explosion'), 2000), // 2s: White screen starts appearing
-        setTimeout(() => setAnimationPhase('reveal'), 2100)     // 2.1s: Results load behind, white screen starts fading out
-    ];
-  };
-
-  const skipAnimation = () => {
-     animationTimeouts.current.forEach(clearTimeout);
-     setAnimationPhase('reveal');
-  };
-  
-  const closeResult = () => {
-    setIsAnimating(false);
-    setAnimationPhase('idle');
-  };
-
-  useEffect(() => {
-    const handleKey = (e) => {
-       if (e.code === 'Space') {
-          if (isAnimating) { e.preventDefault(); animationPhase === 'reveal' ? closeResult() : skipAnimation(); }
-          else if (activeTab === 'battle' && team.length > 0) {
-              e.preventDefault(); attackEnemy(); 
-          }
-       }
-    };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [isAnimating, animationPhase, activeTab, team]);
-
-
-  // --- VIEWS ---
-
-  const GachaView = () => (
-    <div className="flex-1 flex flex-col relative animate-in fade-in">
-        <div className="flex gap-2 justify-center mb-4 overflow-x-auto py-2 no-scrollbar">
-          {CHARACTERS.fiveStar.map((char, idx) => (
-            <button key={char.id} onClick={() => setActiveBannerIndex(idx)} className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-300 whitespace-nowrap ${activeBannerIndex === idx ? 'bg-white text-black border-white scale-105 font-bold' : 'bg-black/40 text-gray-400 border-white/20'}`}>
-              <img src={char.img} className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
-              {char.name}
-            </button>
-          ))}
-        </div>
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gacha Sim</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Animazioni personalizzate */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes pulse-fast { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes bounce-custom { 0%, 100% { transform: translateY(-50%) translateX(-50%); } 50% { transform: translateY(-70%) translateX(-50%); } }
         
-        <div className="flex-1 flex flex-col items-center justify-center relative min-h-[400px]">
-           <div className="relative w-full max-w-4xl aspect-[16/9] bg-gradient-to-r from-gray-900 to-gray-800 rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex items-center group">
-              <div className={`absolute inset-0 opacity-20 bg-cover bg-center transition-all duration-700 ${activeBannerChar.element === 'Fire' ? 'bg-red-900' : activeBannerChar.element === 'Ice' ? 'bg-cyan-900' : activeBannerChar.element === 'Wind' ? 'bg-green-900' : 'bg-purple-900'}`}></div>
-              
-              <div className="z-10 w-1/2 p-8 sm:p-12 flex flex-col items-start justify-center h-full">
-                 <div className="flex items-center gap-2 mb-2">
-                    <span className={`text-xl font-bold uppercase tracking-widest ${activeBannerChar.element === 'Fire' ? 'text-red-400' : activeBannerChar.element === 'Ice' ? 'text-cyan-400' : activeBannerChar.element === 'Wind' ? 'text-green-400' : 'text-purple-400'}`}>{activeBannerChar.element}</span>
-                 </div>
-                 <h1 className="text-4xl sm:text-5xl font-black italic uppercase leading-none mb-4 drop-shadow-lg">{activeBannerChar.name}</h1>
-                 <p className="text-gray-300 italic text-sm mb-4 line-clamp-3">{activeBannerChar.desc}</p>
-                 <div className="flex gap-4 text-xs text-gray-400 bg-black/40 px-3 py-1 rounded-full">
-                    <span>Pity: <b className={pityCounter > 70 ? 'text-yellow-400' : ''}>{pityCounter}/90</b></span>
-                    <span className={guaranteed ? 'text-green-400' : 'text-yellow-400'}>{guaranteed ? 'Garantito' : '50/50'}</span>
-                 </div>
-              </div>
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        .animate-slide-in { animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-zoom-in { animation: zoomIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-              <div className="absolute right-0 top-0 bottom-0 w-1/2 flex items-center justify-center">
-                 <img src={activeBannerChar.img} className="w-56 h-56 sm:w-80 sm:h-80 object-cover rounded-full border-4 border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] transition-transform group-hover:scale-105" referrerPolicy="no-referrer" />
-              </div>
-           </div>
+        .tab-content { display: none; }
+        .tab-content.active { display: flex; }
+    </style>
+</head>
+<body class="h-screen bg-gray-900 text-white font-sans overflow-hidden select-none flex flex-col relative">
+
+    <!-- BACKGROUND -->
+    <div class="absolute inset-0 z-0 pointer-events-none">
+        <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1534796636912-3b95b3ab5980?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-20 blur-sm"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-gray-900/80 via-gray-900/90 to-gray-900"></div>
+    </div>
+
+    <!-- HEADER -->
+    <div class="relative z-10 flex justify-between items-center p-4 bg-gray-900/80 backdrop-blur-md border-b border-white/5">
+        <div class="flex items-center gap-2">
+            <i data-lucide="sparkles" class="text-yellow-400 w-5 h-5"></i>
+            <h1 class="text-lg font-bold tracking-wider italic">GACHA <span class="text-blue-400">SIM</span></h1>
         </div>
-
-        <div className="flex justify-end items-center gap-4 py-8 sm:pr-12">
-           <button onClick={() => pull(1)} className="bg-[#2a2a2a] hover:bg-[#3a3a3a] border border-gray-600 text-white w-40 h-16 rounded flex flex-col items-center justify-center transition-transform active:scale-95">
-              <span className="font-bold">Evoca x 1</span>
-              <div className="flex items-center gap-1 text-xs text-gray-300"><div className="w-3 h-3 rounded-full bg-gradient-to-br from-purple-400 to-blue-600"></div>160</div>
-           </button>
-           <button onClick={() => pull(10)} className="bg-gradient-to-r from-yellow-600 to-yellow-500 text-black w-48 h-16 rounded flex flex-col items-center justify-center transition-transform active:scale-95 shadow-lg shadow-yellow-500/20">
-              <span className="font-black text-xl italic">EVOCA x 10</span>
-              <div className="flex items-center gap-1 text-xs font-bold opacity-80"><div className="w-3 h-3 rounded-full bg-gradient-to-br from-purple-400 to-blue-600 border border-black/20"></div>1600</div>
-           </button>
+        <div class="flex items-center gap-4 bg-black/40 px-3 py-1.5 rounded-full border border-white/10">
+            <div class="flex items-center gap-2">
+                <div class="w-5 h-5 rounded-full bg-gradient-to-br from-purple-400 to-blue-600 flex items-center justify-center">
+                    <i data-lucide="star" class="text-white fill-white w-2.5 h-2.5"></i>
+                </div>
+                <span id="currency-display" class="font-mono font-bold text-base">16000</span>
+            </div>
+            <button onclick="resetCurrency()" class="hover:rotate-180 transition-transform">
+                <i data-lucide="refresh-cw" class="text-gray-400 w-4 h-4"></i>
+            </button>
         </div>
     </div>
-  );
 
-  const BattleView = () => (
-    <div className="flex-1 flex flex-col p-4 animate-in slide-in-from-right-10">
-       <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold flex items-center gap-2"><Sword className="text-red-500" /> Sala Boss <span className="text-sm bg-red-900/50 px-2 py-1 rounded text-red-200">Livello {enemyLevel + 1}</span></h2>
-          <div className="text-right">
-             <p className="text-gray-400 text-xs uppercase">DPS Squadra</p>
-             <p className="text-xl font-mono font-bold text-yellow-400">{teamDps.toLocaleString()}</p>
-          </div>
-       </div>
-
-       <div className="flex-1 flex flex-col items-center justify-center mb-8 relative">
-           <div className={`w-32 h-32 sm:w-48 sm:h-48 rounded-full ${currentEnemy.color} flex items-center justify-center shadow-[0_0_60px_rgba(0,0,0,0.5)] animate-pulse border-4 border-white/10 relative z-10`}>
-              <Ghost size={64} className="text-white opacity-80" />
-           </div>
-           
-           <div className="w-full max-w-md mt-6 relative h-6 bg-gray-800 rounded-full overflow-hidden border border-gray-600">
-              <div 
-                 className="h-full bg-gradient-to-r from-red-600 to-red-400 transition-all duration-200"
-                 style={{ width: `${Math.max(0, (currentEnemyHp / (currentEnemy.hp * (1 + (enemyLevel * 0.5)))) * 100)}%` }}
-              ></div>
-              <p className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white drop-shadow-md">
-                 {currentEnemy.name}: {Math.floor(currentEnemyHp).toLocaleString()} HP
-              </p>
-           </div>
-           
-           <div 
-             className="absolute inset-0 z-20 cursor-crosshair active:scale-[0.98] transition-transform flex items-center justify-center"
-             onClick={() => attackEnemy(false)}
-           >
-           </div>
-       </div>
-
-       <div className="mb-4">
-          <h3 className="text-sm text-gray-400 mb-2 uppercase tracking-wide">La tua Squadra (Max 4)</h3>
-          <div className="flex gap-2 sm:gap-4 justify-center h-32 sm:h-40">
-             {[0,1,2,3].map(i => {
-                const member = team[i];
-                return (
-                  <div key={i} className="w-24 sm:w-32 h-full bg-gray-800/50 rounded-lg border-2 border-dashed border-gray-700 flex items-center justify-center relative overflow-hidden cursor-pointer hover:bg-gray-800 transition-colors"
-                    onClick={() => setShowInventory(true)}
-                  >
-                     {member ? (
-                        <>
-                           <img src={member.img} className="absolute inset-0 w-full h-full object-cover opacity-60" referrerPolicy="no-referrer" />
-                           <div className="z-10 text-center">
-                              <p className="font-bold text-xs sm:text-sm text-white drop-shadow-md truncate px-1">{member.name}</p>
-                              <p className="text-[10px] text-yellow-300">ATK: {member.baseAtk || 50}</p>
-                           </div>
-                           <button 
-                             className="absolute top-1 right-1 bg-red-500/80 p-1 rounded-full hover:bg-red-500 z-20"
-                             onClick={(e) => { e.stopPropagation(); toggleTeamMember(member); }}
-                           >
-                             <X size={10} />
-                           </button>
-                        </>
-                     ) : (
-                        <span className="text-gray-600 text-xs text-center px-2">Slot Vuoto<br/>(Clicca per aggiungere)</span>
-                     )}
-                  </div>
-                )
-             })}
-          </div>
-       </div>
-
-       <button 
-         onClick={() => attackEnemy(false)}
-         className="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-black text-xl rounded-lg shadow-lg shadow-red-600/20 active:translate-y-1 transition-all"
-       >
-         ATTACCA (SPACE)
-       </button>
-    </div>
-  );
-
-  const MissionsView = () => {
-    const allClaimed = activeMissions.length > 0 && activeMissions.every(m => claimedMissionIds.includes(m.uniqueId));
-
-    return (
-      <div className="flex-1 p-6 animate-in slide-in-from-right-10 overflow-y-auto">
-         <h2 className="text-2xl font-bold mb-6 flex items-center gap-2"><Trophy className="text-yellow-400" /> Missioni Attive</h2>
-         
-         <div className="grid gap-4">
-            {activeMissions.map(mission => {
-               let current = 0;
-               if (mission.type === 'pulls') current = missionProgress.pulls;
-               if (mission.type === 'kills') current = missionProgress.kills;
-               if (mission.type === 'clicks') current = missionProgress.clicks;
-               if (mission.type === 'rare_pull') current = missionProgress.rare_pull;
-               
-               const isComplete = current >= mission.target;
-               const isClaimed = claimedMissionIds.includes(mission.uniqueId);
-  
-               return (
-                 <div key={mission.uniqueId} className="bg-gray-800 p-4 rounded-xl border border-gray-700 flex justify-between items-center transition-all hover:border-gray-600">
-                    <div>
-                       <h3 className="font-bold text-lg">{mission.text}</h3>
-                       <div className="w-48 h-2 bg-gray-700 rounded-full mt-2 overflow-hidden">
-                          <div className="h-full bg-blue-500 transition-all duration-500" style={{ width: `${Math.min(100, (current/mission.target)*100)}%` }}></div>
-                       </div>
-                       <p className="text-xs text-gray-400 mt-1">{current} / {mission.target}</p>
-                    </div>
-                    
-                    <div className="flex flex-col items-end gap-2">
-                        <div className="flex items-center gap-1 bg-black/30 px-2 py-1 rounded text-xs">
-                            <div className="w-3 h-3 rounded-full bg-gradient-to-br from-purple-400 to-blue-600"></div>
-                            <span>{mission.reward}</span>
-                        </div>
-                        <button 
-                          disabled={!isComplete || isClaimed}
-                          onClick={() => {
-                              setCurrency(c => c + mission.reward);
-                              setClaimedMissionIds(prev => [...prev, mission.uniqueId]);
-                          }}
-                          className={`px-4 py-2 rounded-lg font-bold text-sm transition-all
-                            ${isClaimed ? 'bg-gray-700 text-gray-500' : isComplete ? 'bg-yellow-500 text-black hover:bg-yellow-400 shadow-lg shadow-yellow-500/20' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}
-                          `}
-                        >
-                           {isClaimed ? 'Riscosso' : 'Riscatta'}
-                        </button>
-                    </div>
-                 </div>
-               );
-            })}
-         </div>
-  
-         {allClaimed && (
-             <div className="mt-8 flex justify-center animate-in zoom-in">
-                 <button 
-                   onClick={generateNewMissions}
-                   className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 px-8 py-4 rounded-full font-bold text-lg shadow-xl shadow-blue-500/30"
-                 >
-                     <RotateCcw size={20} />
-                     Nuove Missioni
-                 </button>
-             </div>
-         )}
-  
-         <div className="mt-8 bg-blue-900/20 border border-blue-500/30 p-4 rounded-lg">
-            <h3 className="font-bold text-blue-300 flex items-center gap-2"><Info size={16}/> Come Funziona</h3>
-            <ul className="list-disc list-inside text-sm text-gray-300 mt-2 space-y-1">
-               <li>Completa tutte e 3 le missioni per sbloccarne di nuove.</li>
-               <li>Sconfiggi i boss per guadagnare Giada extra.</li>
-            </ul>
-         </div>
-      </div>
-    );
-  };
-
-  return (
-    <div className="h-screen bg-gray-900 text-white font-sans overflow-hidden select-none flex flex-col relative">
-      
-      {/* BACKGROUND */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1534796636912-3b95b3ab5980?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-20 blur-sm"></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-gray-900/80 via-gray-900/90 to-gray-900"></div>
-      </div>
-
-      {/* HEADER */}
-      <div className="relative z-10 flex justify-between items-center p-4 bg-gray-900/80 backdrop-blur-md border-b border-white/5">
-        <div className="flex items-center gap-2">
-          <Sparkles className="text-yellow-400" size={20} />
-          <h1 className="text-lg font-bold tracking-wider italic">GACHA <span className="text-blue-400">SIM</span></h1>
-        </div>
-        <div className="flex items-center gap-4 bg-black/40 px-3 py-1.5 rounded-full border border-white/10">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-400 to-blue-600 flex items-center justify-center"><Star size={10} className="fill-white" /></div>
-            <span className="font-mono font-bold text-base">{currency}</span>
-          </div>
-          <button onClick={resetCurrency} className="hover:rotate-180 transition-transform"><RefreshCw size={14} className="text-gray-400" /></button>
-        </div>
-      </div>
-
-      {/* MAIN CONTENT AREA */}
-      <div className="relative z-10 flex-1 overflow-hidden flex flex-col">
-          {activeTab === 'gacha' && <GachaView />}
-          {activeTab === 'battle' && <BattleView />}
-          {activeTab === 'missions' && <MissionsView />}
-      </div>
-
-      {/* BOTTOM NAVIGATION */}
-      <div className="relative z-20 bg-gray-900 border-t border-white/10 p-2 pb-6 sm:pb-2">
-         <div className="flex justify-around max-w-lg mx-auto">
-             <button onClick={() => setActiveTab('gacha')} className={`flex flex-col items-center gap-1 p-2 rounded-lg w-20 transition-colors ${activeTab === 'gacha' ? 'text-blue-400 bg-white/5' : 'text-gray-500 hover:text-gray-300'}`}>
-                <Star size={20} className={activeTab === 'gacha' ? 'fill-blue-400' : ''} />
-                <span className="text-[10px] font-bold uppercase">Evoca</span>
-             </button>
-             <button onClick={() => setActiveTab('battle')} className={`flex flex-col items-center gap-1 p-2 rounded-lg w-20 transition-colors ${activeTab === 'battle' ? 'text-red-400 bg-white/5' : 'text-gray-500 hover:text-gray-300'}`}>
-                <Sword size={20} className={activeTab === 'battle' ? 'fill-red-400' : ''} />
-                <span className="text-[10px] font-bold uppercase">Combatti</span>
-             </button>
-             <button onClick={() => setActiveTab('missions')} className={`flex flex-col items-center gap-1 p-2 rounded-lg w-20 transition-colors ${activeTab === 'missions' ? 'text-yellow-400 bg-white/5' : 'text-gray-500 hover:text-gray-300'}`}>
-                <Trophy size={20} className={activeTab === 'missions' ? 'fill-yellow-400' : ''} />
-                <span className="text-[10px] font-bold uppercase">Missioni</span>
-             </button>
-             <button onClick={() => setShowInventory(true)} className="flex flex-col items-center gap-1 p-2 rounded-lg w-20 text-gray-500 hover:text-gray-300">
-                <History size={20} />
-                <span className="text-[10px] font-bold uppercase">Borsa</span>
-             </button>
-         </div>
-      </div>
-
-      {/* MODALS */}
-      {showInventory && (
-        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm p-4 animate-in fade-in flex items-center justify-center">
-            <div className="bg-gray-800 w-full max-w-5xl h-[85vh] rounded-2xl border border-gray-700 flex flex-col overflow-hidden">
-                <div className="p-4 border-b border-gray-700 flex justify-between items-center bg-gray-900">
-                    <h2 className="text-xl font-bold flex items-center gap-2"><History/> Inventario <span className="text-sm font-normal text-gray-500">({inventory.length})</span></h2>
-                    <div className="flex gap-2">
-                        <button onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)} className="p-2 bg-gray-700 rounded hover:bg-gray-600"><ArrowDownUp size={18}/></button>
-                        {isSortDropdownOpen && (
-                             <div className="absolute top-16 right-16 bg-gray-700 rounded shadow-xl z-50 flex flex-col w-40">
-                                 <button onClick={() => {setSortOrder('recent'); setIsSortDropdownOpen(false)}} className="p-3 text-left hover:bg-gray-600 text-xs">Recenti</button>
-                                 <button onClick={() => {setSortOrder('rarity_desc'); setIsSortDropdownOpen(false)}} className="p-3 text-left hover:bg-gray-600 text-xs">Rarità (Alta)</button>
-                             </div>
-                        )}
-                        <button onClick={() => setShowInventory(false)} className="p-2 bg-red-500/20 text-red-400 rounded hover:bg-red-500 hover:text-white"><X size={18}/></button>
-                    </div>
+    <!-- MAIN CONTENT -->
+    <div class="relative z-10 flex-1 overflow-hidden flex flex-col">
+        
+        <!-- GACHA VIEW -->
+        <div id="view-gacha" class="tab-content active flex-1 flex-col relative animate-fade-in p-4">
+            <!-- Selector -->
+            <div id="banner-selector" class="flex gap-2 justify-center mb-4 overflow-x-auto py-2 no-scrollbar">
+                <!-- Populated by JS -->
+            </div>
+            
+            <!-- Banner Display -->
+            <div class="flex-1 flex flex-col items-center justify-center relative min-h-[400px]">
+                <div id="banner-display" class="relative w-full max-w-4xl aspect-[16/9] bg-gradient-to-r from-gray-900 to-gray-800 rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex items-center group">
+                    <!-- Populated by JS -->
                 </div>
-                <div className="flex-1 overflow-y-auto p-4 bg-gray-900/50">
-                    {inventory.length === 0 ? <div className="text-center text-gray-500 mt-20">Inventario Vuoto</div> : (
-                        <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-3">
-                           {getSortedInventory().map((item, idx) => (
-                               <Card 
-                                 key={idx} 
-                                 item={item} 
-                                 minimal={true} 
-                                 isSelected={team.some(c => c.obtainedAt === item.obtainedAt)}
-                                 onClick={(it) => {
-                                     if (activeTab === 'battle') toggleTeamMember(it);
-                                     else setSelectedItem(it);
-                                 }}
-                               />
-                           ))}
-                        </div>
-                    )}
-                </div>
-                {activeTab === 'battle' && <div className="p-3 bg-blue-900/30 border-t border-blue-500/30 text-center text-xs text-blue-200">Clicca su un personaggio per aggiungerlo/rimuoverlo dalla squadra ({team.length}/4)</div>}
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex justify-end items-center gap-4 py-8 sm:pr-12">
+                <button onclick="pull(1)" class="bg-[#2a2a2a] hover:bg-[#3a3a3a] border border-gray-600 text-white w-40 h-16 rounded flex flex-col items-center justify-center transition-transform active:scale-95">
+                    <span class="font-bold">Evoca x 1</span>
+                    <div class="flex items-center gap-1 text-xs text-gray-300">
+                        <div class="w-3 h-3 rounded-full bg-gradient-to-br from-purple-400 to-blue-600"></div>160
+                    </div>
+                </button>
+                <button onclick="pull(10)" class="bg-gradient-to-r from-yellow-600 to-yellow-500 text-black w-48 h-16 rounded flex flex-col items-center justify-center transition-transform active:scale-95 shadow-lg shadow-yellow-500/20">
+                    <span class="font-black text-xl italic">EVOCA x 10</span>
+                    <div class="flex items-center gap-1 text-xs font-bold opacity-80">
+                        <div class="w-3 h-3 rounded-full bg-gradient-to-br from-purple-400 to-blue-600 border border-black/20"></div>1600
+                    </div>
+                </button>
             </div>
         </div>
-      )}
 
-      {selectedItem && (
-          <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-4" onClick={() => setSelectedItem(null)}>
-              <div className="bg-gray-800 max-w-2xl w-full p-6 rounded-2xl border border-gray-600 relative flex gap-6 items-center" onClick={e => e.stopPropagation()}>
-                  <button onClick={() => setSelectedItem(null)} className="absolute top-4 right-4"><X /></button>
-                  <img src={selectedItem.img} className="w-32 h-32 sm:w-48 sm:h-48 rounded-full border-4 border-gray-600 object-cover" referrerPolicy="no-referrer"/>
-                  <div>
-                      <h2 className="text-2xl font-bold">{selectedItem.name}</h2>
-                      <div className="flex gap-2 my-2"><StarDisplay count={selectedItem.rarity} /></div>
-                      <p className="text-gray-300 italic text-sm">{selectedItem.desc || "Nessuna descrizione."}</p>
-                      <div className="mt-4 flex gap-2">
-                          <span className="bg-gray-700 px-2 py-1 rounded text-xs text-yellow-300">ATK Base: {selectedItem.baseAtk || 50}</span>
-                      </div>
-                  </div>
-              </div>
-          </div>
-      )}
-
-      {/* Animation Overlay */}
-      {isAnimating && (
-        <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center">
-             <button onClick={animationPhase === 'reveal' ? closeResult : skipAnimation} className="absolute top-8 right-8 text-white/50 border border-white/20 px-4 py-2 rounded uppercase text-xs hover:bg-white/10 flex gap-2 items-center z-50">
-                {animationPhase === 'reveal' ? <X size={14}/> : <FastForward size={14}/>} {animationPhase === 'reveal' ? 'Chiudi' : 'Salta'} (Space)
-             </button>
-
-             {animationPhase === 'travel' && (
-                <div className="relative w-full h-full overflow-hidden">
-                   {/* Background Speed Lines */}
-                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-900 via-black to-black"></div>
-                   <div className="absolute inset-0 opacity-50 animate-pulse bg-gradient-to-t from-blue-900/0 via-blue-500/10 to-blue-900/0"></div>
-                   
-                   {/* Meteor */}
-                   <div className="absolute top-1/2 -left-20 w-full h-2 bg-gradient-to-r from-transparent via-blue-400 to-white opacity-50 blur-sm animate-[ping_0.2s_linear_infinite]"></div>
-                   
-                   <div className={`
-                     absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 
-                     w-8 h-8 rounded-full border-4 border-white
-                     shadow-[0_0_100px_30px_rgba(255,255,255,0.8)]
-                     ${highestRarityInPull === 5 ? 'bg-yellow-200 shadow-yellow-500' : highestRarityInPull === 4 ? 'bg-purple-200 shadow-purple-500' : 'bg-blue-200 shadow-blue-500'}
-                     animate-[bounce_0.5s_infinite] z-20
-                   `}></div>
-                   
-                   <div className="absolute bottom-20 w-full text-center">
-                       <p className="text-white/50 tracking-[0.5em] animate-pulse">IPERSPAZIO...</p>
-                   </div>
+        <!-- BATTLE VIEW -->
+        <div id="view-battle" class="tab-content flex-1 flex-col p-4 animate-slide-in">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold flex items-center gap-2">
+                    <i data-lucide="sword" class="text-red-500"></i> Sala Boss 
+                    <span id="enemy-level-display" class="text-sm bg-red-900/50 px-2 py-1 rounded text-red-200">Livello 1</span>
+                </h2>
+                <div class="text-right">
+                    <p class="text-gray-400 text-xs uppercase">DPS Squadra</p>
+                    <p id="team-dps-display" class="text-xl font-mono font-bold text-yellow-400">0</p>
                 </div>
-             )}
-             
-             {/* --- SMOOTH TRANSITION OVERLAY --- */}
-             {/* This white div persists during reveal and fades out */}
-             {(animationPhase === 'explosion' || animationPhase === 'reveal') && (
-                <div 
-                  className={`absolute inset-0 bg-white z-40 pointer-events-none transition-opacity duration-1000 ease-out 
-                    ${animationPhase === 'reveal' ? 'opacity-0' : 'opacity-100'}
-                  `}
-                ></div>
-             )}
+            </div>
 
-             {animationPhase === 'reveal' && (
-                <div className="text-center w-full h-full flex flex-col items-center justify-center bg-gradient-to-b from-gray-900 to-black z-30">
-                   <h2 className="text-3xl font-bold text-white mb-8 uppercase tracking-widest drop-shadow-lg animate-in fade-in slide-in-from-bottom-4 duration-700">Risultati</h2>
-                   <div className="flex flex-wrap justify-center gap-4 max-w-6xl px-4 overflow-y-auto max-h-[70vh] py-4">
-                      {currentPullResults.map((item, idx) => (
-                         <div key={idx} className="animate-in zoom-in duration-500" style={{animationDelay: `${idx*100 + 300}ms`}}>
-                            <Card item={item} animate={true} />
-                         </div>
-                      ))}
-                   </div>
-                   <button onClick={closeResult} className="mt-8 px-8 py-3 bg-white text-black font-bold rounded-full hover:scale-105 transition-transform shadow-[0_0_20px_rgba(255,255,255,0.3)] animate-in fade-in duration-1000 delay-500">Continua</button>
+            <div class="flex-1 flex flex-col items-center justify-center mb-8 relative">
+                <div id="enemy-sprite" class="w-32 h-32 sm:w-48 sm:h-48 rounded-full bg-red-500 flex items-center justify-center shadow-[0_0_60px_rgba(0,0,0,0.5)] animate-pulse border-4 border-white/10 relative z-10">
+                    <i data-lucide="ghost" class="text-white opacity-80 w-16 h-16"></i>
                 </div>
-             )}
+                
+                <div class="w-full max-w-md mt-6 relative h-6 bg-gray-800 rounded-full overflow-hidden border border-gray-600">
+                    <div id="enemy-hp-bar" class="h-full bg-gradient-to-r from-red-600 to-red-400 transition-all duration-200" style="width: 100%"></div>
+                    <p id="enemy-hp-text" class="absolute inset-0 flex items-center justify-center text-xs font-bold text-white drop-shadow-md">
+                        Nemico: 100 HP
+                    </p>
+                </div>
+                
+                <div class="absolute inset-0 z-20 cursor-crosshair active:scale-[0.98] transition-transform" onclick="attackEnemy(false)"></div>
+            </div>
+
+            <div class="mb-4">
+                <h3 class="text-sm text-gray-400 mb-2 uppercase tracking-wide">La tua Squadra (Max 4)</h3>
+                <div id="team-container" class="flex gap-2 sm:gap-4 justify-center h-32 sm:h-40">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <button onclick="attackEnemy(false)" class="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-black text-xl rounded-lg shadow-lg shadow-red-600/20 active:translate-y-1 transition-all">
+                ATTACCA (SPACE)
+            </button>
         </div>
-      )}
 
-      <style>{`.no-scrollbar::-webkit-scrollbar { display: none; } .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }`}</style>
+        <!-- MISSIONS VIEW -->
+        <div id="view-missions" class="tab-content flex-1 flex-col p-6 animate-slide-in overflow-y-auto">
+            <h2 class="text-2xl font-bold mb-6 flex items-center gap-2"><i data-lucide="trophy" class="text-yellow-400"></i> Missioni Attive</h2>
+            <div id="missions-container" class="grid gap-4">
+                <!-- Populated by JS -->
+            </div>
+            
+            <div id="new-missions-btn-container" class="mt-8 flex justify-center animate-zoom-in hidden">
+                <button onclick="generateNewMissions()" class="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 px-8 py-4 rounded-full font-bold text-lg shadow-xl shadow-blue-500/30">
+                    <i data-lucide="rotate-ccw"></i> Nuove Missioni
+                </button>
+            </div>
+
+            <div class="mt-8 bg-blue-900/20 border border-blue-500/30 p-4 rounded-lg">
+                <h3 class="font-bold text-blue-300 flex items-center gap-2"><i data-lucide="info" class="w-4 h-4"></i> Come Funziona</h3>
+                <ul class="list-disc list-inside text-sm text-gray-300 mt-2 space-y-1">
+                    <li>Completa tutte e 3 le missioni per sbloccarne di nuove.</li>
+                    <li>Sconfiggi i boss per guadagnare Giada extra.</li>
+                </ul>
+            </div>
+        </div>
     </div>
-  );
-}
+
+    <!-- BOTTOM NAVIGATION -->
+    <div class="relative z-20 bg-gray-900 border-t border-white/10 p-2 pb-6 sm:pb-2">
+        <div class="flex justify-around max-w-lg mx-auto" id="nav-buttons">
+            <button onclick="switchTab('gacha')" class="nav-btn flex flex-col items-center gap-1 p-2 rounded-lg w-20 transition-colors text-blue-400 bg-white/5" data-tab="gacha">
+                <i data-lucide="star" class="fill-blue-400 text-blue-400 w-5 h-5"></i>
+                <span class="text-[10px] font-bold uppercase">Evoca</span>
+            </button>
+            <button onclick="switchTab('battle')" class="nav-btn flex flex-col items-center gap-1 p-2 rounded-lg w-20 transition-colors text-gray-500 hover:text-gray-300" data-tab="battle">
+                <i data-lucide="sword" class="w-5 h-5"></i>
+                <span class="text-[10px] font-bold uppercase">Combatti</span>
+            </button>
+            <button onclick="switchTab('missions')" class="nav-btn flex flex-col items-center gap-1 p-2 rounded-lg w-20 transition-colors text-gray-500 hover:text-gray-300" data-tab="missions">
+                <i data-lucide="trophy" class="w-5 h-5"></i>
+                <span class="text-[10px] font-bold uppercase">Missioni</span>
+            </button>
+            <button onclick="toggleInventory(true)" class="flex flex-col items-center gap-1 p-2 rounded-lg w-20 text-gray-500 hover:text-gray-300">
+                <i data-lucide="history" class="w-5 h-5"></i>
+                <span class="text-[10px] font-bold uppercase">Borsa</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- INVENTORY MODAL -->
+    <div id="modal-inventory" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm p-4 hidden flex-col items-center justify-center animate-fade-in">
+        <div class="bg-gray-800 w-full max-w-5xl h-[85vh] rounded-2xl border border-gray-700 flex flex-col overflow-hidden relative">
+            <div class="p-4 border-b border-gray-700 flex justify-between items-center bg-gray-900">
+                <h2 class="text-xl font-bold flex items-center gap-2">
+                    <i data-lucide="history"></i> Inventario <span id="inventory-count" class="text-sm font-normal text-gray-500">(0)</span>
+                </h2>
+                <div class="flex gap-2 relative">
+                    <button onclick="toggleSortDropdown()" class="p-2 bg-gray-700 rounded hover:bg-gray-600"><i data-lucide="arrow-down-up" class="w-4 h-4"></i></button>
+                    <div id="sort-dropdown" class="hidden absolute top-10 right-10 bg-gray-700 rounded shadow-xl z-50 flex flex-col w-40 overflow-hidden">
+                        <button onclick="setSortOrder('recent')" class="p-3 text-left hover:bg-gray-600 text-xs w-full">Recenti</button>
+                        <button onclick="setSortOrder('rarity_desc')" class="p-3 text-left hover:bg-gray-600 text-xs w-full">Rarità (Alta)</button>
+                    </div>
+                    <button onclick="toggleInventory(false)" class="p-2 bg-red-500/20 text-red-400 rounded hover:bg-red-500 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+                </div>
+            </div>
+            <div id="inventory-grid" class="flex-1 overflow-y-auto p-4 bg-gray-900/50 grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-3 auto-rows-max">
+                <!-- Populated by JS -->
+            </div>
+            <div id="inventory-battle-hint" class="hidden p-3 bg-blue-900/30 border-t border-blue-500/30 text-center text-xs text-blue-200">
+                Clicca su un personaggio per aggiungerlo/rimuoverlo dalla squadra
+            </div>
+        </div>
+    </div>
+
+    <!-- GACHA ANIMATION OVERLAY -->
+    <div id="gacha-animation" class="fixed inset-0 z-[100] bg-black hidden items-center justify-center">
+        <button id="anim-skip-btn" onclick="skipAnimation()" class="absolute top-8 right-8 text-white/50 border border-white/20 px-4 py-2 rounded uppercase text-xs hover:bg-white/10 flex gap-2 items-center z-50">
+            <i data-lucide="fast-forward" class="w-3 h-3"></i> Salta (Space)
+        </button>
+
+        <!-- Travel Phase -->
+        <div id="anim-phase-travel" class="hidden relative w-full h-full overflow-hidden">
+            <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-900 via-black to-black"></div>
+            <div class="absolute inset-0 opacity-50 animate-pulse bg-gradient-to-t from-blue-900/0 via-blue-500/10 to-blue-900/0"></div>
+            <div class="absolute top-1/2 -left-20 w-full h-2 bg-gradient-to-r from-transparent via-blue-400 to-white opacity-50 blur-sm animate-[ping_0.2s_linear_infinite]"></div>
+            
+            <div id="anim-meteor" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full border-4 border-white shadow-[0_0_100px_30px_rgba(255,255,255,0.8)] animate-[bounce-custom_0.5s_infinite] z-20"></div>
+            
+            <div class="absolute bottom-20 w-full text-center">
+                <p class="text-white/50 tracking-[0.5em] animate-[pulse-fast_1s_infinite]">IPERSPAZIO...</p>
+            </div>
+        </div>
+
+        <!-- Flash Overlay -->
+        <div id="anim-phase-flash" class="absolute inset-0 bg-white z-40 pointer-events-none transition-opacity duration-1000 ease-out opacity-0 hidden"></div>
+
+        <!-- Reveal Phase -->
+        <div id="anim-phase-reveal" class="hidden text-center w-full h-full flex-col items-center justify-center bg-gradient-to-b from-gray-900 to-black z-30">
+            <h2 class="text-3xl font-bold text-white mb-8 uppercase tracking-widest drop-shadow-lg animate-slide-in">Risultati</h2>
+            <div id="pull-results-grid" class="flex flex-wrap justify-center gap-4 max-w-6xl px-4 overflow-y-auto max-h-[70vh] py-4">
+                <!-- Populated by JS -->
+            </div>
+            <button onclick="closeResult()" class="mt-8 px-8 py-3 bg-white text-black font-bold rounded-full hover:scale-105 transition-transform shadow-[0_0_20px_rgba(255,255,255,0.3)] animate-fade-in" style="animation-delay: 500ms; animation-fill-mode: both;">Continua</button>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // --- DATA & CONSTANTS ---
+        const CHARACTERS = {
+            fiveStar: [
+                { id: 'emanuela', name: 'Emanuela Aisa', element: 'Ice', path: 'Erudition', img: 'https://lh3.googleusercontent.com/a-/ALV-UjX5WaAKPyFOdPE72EV2dbV2IvSo1Xbdv12mYFqvBUM9gWaaMoRU=s75-c', desc: "Donna più potente al mondo, il suo sguardo è in grado di congelarti.", baseAtk: 1200 },
+                { id: 'jack', name: 'Jack la Furia', element: 'Fire', path: 'Destruction', img: 'https://lh3.googleusercontent.com/a-/ALV-UjUSymyz-BIoIob8NGEU2STB4zWgfTju-WPYs-XcWJACeWtFpCc=s75-c', desc: "Il distruttore di mondi, attraverso green screen e cisco packet tracer sterminerà tutti.", baseAtk: 1150 },
+                { id: 'falleri', name: 'Falleri', element: 'Wind', path: 'Hunt', img: 'https://lh3.googleusercontent.com/a-/ALV-UjVvAB7LBrk37e4FvlVr7Ecaadp8OXyFUYev7JCgAN3LPhcxoV4t=s75-c', desc: "Cacciatore esperto di codici, tirando fuori i suoi codici, spazzerà via tutta la tua speranza di fare qualcosa di decente.", baseAtk: 1300 },
+                { id: 'nicolucci', name: 'Nicolucci', element: 'Quantum', path: 'Nihility', img: 'https://lh3.googleusercontent.com/a-/ALV-UjW3bdf3KTVMa5Rot0uN61bfOX2Wn5zaO1Pa1jmV5-Rb_q8dcLhm=s75-c', desc: "Colei che ha probabilmente vissuto nella seconda guerra mondiale, bipolare come acqua e olio.", baseAtk: 1100 }
+            ],
+            fourStar: [
+                { name: 'Quadernone', element: 'Physical', path: 'Preservation', desc: "Un tomo antico capace di proteggere dagli appunti mancanti.", baseAtk: 400 },
+                { name: 'Commentino su Parini', element: 'Wind', path: 'Erudition', desc: "Analisi tagliente del 'Giorno'.", baseAtk: 450 },
+                { name: 'Commentino su Boccaccio', element: 'Physical', path: 'Nihility', desc: "Storie di pestilenza.", baseAtk: 420 },
+                { name: 'Commentino su Petrarca', element: 'Ice', path: 'Remembrance', desc: "Laura non c'è, è andata via.", baseAtk: 410 },
+                { name: 'Commentino su Dante', element: 'Fire', path: 'Destruction', desc: "Lasciate ogni speranza.", baseAtk: 480 },
+                { name: 'Codice Funzionante', element: 'Lightning', path: 'Erudition', desc: "Una rarità assoluta. Compila al primo colpo.", baseAtk: 600 },
+                { name: 'Thepsit', element: 'Quantum', path: 'Hunt', desc: "Entità misteriosa.", baseAtk: 550 },
+                { name: 'Compiti di Inglese', element: 'Physical', path: 'Nihility', desc: "Grammar Nazi.", baseAtk: 380 },
+                { name: 'Progetto Falleri', element: 'Imaginary', path: 'Harmony', desc: "Esiste solo nell'immaginazione.", baseAtk: 350 },
+                { name: 'ELDEGOOOOO', element: 'Fire', path: 'Destruction', desc: "Urlo di battaglia leggendario.", baseAtk: 500 },
+                { name: 'Busatti', element: 'Wind', path: 'Abundance', desc: "Portatore di saggezza e voti alti.", baseAtk: 300 }
+            ],
+            threeStar: ['Spada Arrugginita', 'Bastone da Passeggio', 'Fionda Spaziale', 'Manuale di Cucina', 'Chiave Inglese', 'Sasso Fortunato']
+        };
+
+        const ENEMIES = [
+            { name: "Verifica a Sorpresa", hp: 5000, reward: 160, color: "bg-red-500" },
+            { name: "Connessione Lenta", hp: 12000, reward: 320, color: "bg-yellow-500" },
+            { name: "Bug di Produzione", hp: 30000, reward: 600, color: "bg-purple-600" },
+            { name: "Professore Severo", hp: 80000, reward: 1000, color: "bg-gray-700" },
+            { name: "Il Preside", hp: 250000, reward: 5000, color: "bg-rose-900" }
+        ];
+
+        const MISSION_POOL = [
+            { text: "Effettua 1 Evocazione", target: 1, type: 'pulls', reward: 160 },
+            { text: "Effettua 10 Evocazioni", target: 10, type: 'pulls', reward: 1600 },
+            { text: "Sconfiggi 1 Nemico", target: 1, type: 'kills', reward: 300 },
+            { text: "Sconfiggi 3 Nemici", target: 3, type: 'kills', reward: 800 },
+            { text: "Clicca 50 volte in battaglia", target: 50, type: 'clicks', reward: 200 },
+            { text: "Clicca 200 volte in battaglia", target: 200, type: 'clicks', reward: 600 },
+            { text: "Ottieni un 4 stelle o superiore", target: 1, type: 'rare_pull', reward: 500 },
+        ];
+
+        // --- STATE ---
+        let activeTab = 'gacha';
+        let currency = 16000;
+        let activeBannerIndex = 0;
+        let inventory = [];
+        
+        let pityCounter = 0;
+        let guaranteed = false;
+        let isAnimating = false;
+        let animationPhase = 'idle';
+        let currentPullResults = [];
+        let highestRarityInPull = 3;
+        let animTimeouts = [];
+
+        let team = [];
+        let enemyLevel = 0;
+        let currentEnemyHp = ENEMIES[0].hp;
+        let battleInterval;
+
+        let missionProgress = { pulls: 0, kills: 0, clicks: 0, rare_pull: 0 };
+        let activeMissions = [];
+        let claimedMissionIds = [];
+
+        let sortOrder = 'recent';
+
+        // --- INITIALIZATION ---
+        function init() {
+            lucide.createIcons();
+            generateNewMissions();
+            renderGachaView();
+            renderTeam();
+            updateBattleUI();
+            updateMissionsUI();
+            
+            // Start battle loop
+            battleInterval = setInterval(() => {
+                if (activeTab === 'battle' && team.length > 0) attackEnemy(true);
+            }, 1000);
+
+            // Global Key Listener for Spacebar
+            window.addEventListener('keydown', (e) => {
+                if (e.code === 'Space') {
+                    if (isAnimating) {
+                        e.preventDefault();
+                        if(animationPhase === 'reveal') closeResult();
+                        else skipAnimation();
+                    } else if (activeTab === 'battle' && team.length > 0) {
+                        e.preventDefault();
+                        attackEnemy(false);
+                    }
+                }
+            });
+        }
+
+        // --- UI UPDATES ---
+        function updateCurrency() {
+            document.getElementById('currency-display').innerText = currency;
+        }
+
+        function resetCurrency() {
+            currency = 16000;
+            updateCurrency();
+        }
+
+        function switchTab(tab) {
+            activeTab = tab;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(`view-${tab}`).classList.add('active');
+            
+            // Update nav buttons style
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                const icon = btn.querySelector('i');
+                if (btn.dataset.tab === tab) {
+                    btn.classList.add('text-blue-400', 'bg-white/5');
+                    btn.classList.remove('text-gray-500');
+                    if(tab === 'gacha' || tab === 'battle' || tab === 'missions') {
+                        icon.classList.add('fill-current');
+                    }
+                } else {
+                    btn.classList.remove('text-blue-400', 'bg-white/5');
+                    btn.classList.add('text-gray-500');
+                    icon.classList.remove('fill-current');
+                }
+            });
+            
+            if(tab === 'battle') updateBattleUI();
+            if(tab === 'missions') updateMissionsUI();
+        }
+
+        // --- GACHA RENDER LOGIC ---
+        function renderGachaView() {
+            const char = CHARACTERS.fiveStar[activeBannerIndex];
+            
+            // Selector
+            const selectorHtml = CHARACTERS.fiveStar.map((c, idx) => `
+                <button onclick="setActiveBanner(${idx})" class="flex items-center gap-2 px-4 py-2 rounded-full border transition-all duration-300 whitespace-nowrap ${activeBannerIndex === idx ? 'bg-white text-black border-white scale-105 font-bold' : 'bg-black/40 text-gray-400 border-white/20'}">
+                    <img src="${c.img}" class="w-6 h-6 rounded-full" referrerpolicy="no-referrer" />
+                    ${c.name}
+                </button>
+            `).join('');
+            document.getElementById('banner-selector').innerHTML = selectorHtml;
+
+            // Banner Info
+            const colorClass = char.element === 'Fire' ? 'text-red-400' : char.element === 'Ice' ? 'text-cyan-400' : char.element === 'Wind' ? 'text-green-400' : 'text-purple-400';
+            const bgClass = char.element === 'Fire' ? 'bg-red-900' : char.element === 'Ice' ? 'bg-cyan-900' : char.element === 'Wind' ? 'bg-green-900' : 'bg-purple-900';
+            
+            document.getElementById('banner-display').innerHTML = `
+                <div class="absolute inset-0 opacity-20 bg-cover bg-center transition-all duration-700 ${bgClass}"></div>
+                <div class="z-10 w-1/2 p-8 sm:p-12 flex flex-col items-start justify-center h-full">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-xl font-bold uppercase tracking-widest ${colorClass}">${char.element}</span>
+                    </div>
+                    <h1 class="text-4xl sm:text-5xl font-black italic uppercase leading-none mb-4 drop-shadow-lg">${char.name}</h1>
+                    <p class="text-gray-300 italic text-sm mb-4 line-clamp-3">${char.desc}</p>
+                    <div class="flex gap-4 text-xs text-gray-400 bg-black/40 px-3 py-1 rounded-full">
+                        <span>Pity: <b class="${pityCounter > 70 ? 'text-yellow-400' : ''}">${pityCounter}/90</b></span>
+                        <span class="${guaranteed ? 'text-green-400' : 'text-yellow-400'}">${guaranteed ? 'Garantito' : '50/50'}</span>
+                    </div>
+                </div>
+                <div class="absolute right-0 top-0 bottom-0 w-1/2 flex items-center justify-center pointer-events-none">
+                    <img src="${char.img}" class="w-56 h-56 sm:w-80 sm:h-80 object-cover rounded-full border-4 border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]" referrerpolicy="no-referrer" />
+                </div>
+            `;
+        }
+
+        function setActiveBanner(idx) {
+            activeBannerIndex = idx;
+            renderGachaView();
+        }
+
+        // --- GACHA PULL LOGIC ---
+        function pull(count) {
+            if (currency < count * 160) { alert("Non hai abbastanza Giada!"); return; }
+            currency -= (count * 160);
+            updateCurrency();
+            
+            let results = [];
+            let maxRarity = 3;
+            const activeChar = CHARACTERS.fiveStar[activeBannerIndex];
+
+            for (let i = 0; i < count; i++) {
+                pityCounter++;
+                const rand = Math.random();
+                let fiveStarProb = pityCounter > 73 ? 0.006 + (pityCounter - 73) * 0.06 : 0.006;
+                if (pityCounter >= 90) fiveStarProb = 1;
+
+                if (rand < fiveStarProb) {
+                    maxRarity = 5; pityCounter = 0;
+                    let char;
+                    if (guaranteed || Math.random() < 0.5) {
+                        char = { ...activeChar, rarity: 5, type: 'char', pityResult: 'win' };
+                        guaranteed = false;
+                    } else {
+                        const pool = CHARACTERS.fiveStar.filter(c => c.id !== activeChar.id);
+                        char = { ...pool[Math.floor(Math.random() * pool.length)], rarity: 5, type: 'char', pityResult: 'lose' };
+                        guaranteed = true;
+                    }
+                    results.push(char);
+                } else if (rand < 0.057) {
+                    if (maxRarity < 4) maxRarity = 4;
+                    const pool = CHARACTERS.fourStar;
+                    results.push({ ...pool[Math.floor(Math.random() * pool.length)], rarity: 4, type: 'char' });
+                } else {
+                    const pool = CHARACTERS.threeStar;
+                    results.push({ name: pool[Math.floor(Math.random() * pool.length)], rarity: 3, type: 'weapon', baseAtk: 10 });
+                }
+            }
+
+            const timestamp = Date.now();
+            currentPullResults = results.map((item, i) => ({ 
+                ...item, 
+                id: timestamp + i,
+                isNew: !inventory.some(inv => inv.name === item.name) && item.rarity > 3 
+            }));
+            
+            highestRarityInPull = maxRarity;
+            
+            // Add to inventory & update missions
+            inventory = [...inventory, ...currentPullResults];
+            missionProgress.pulls += count;
+            missionProgress.rare_pull += currentPullResults.filter(i => i.rarity >= 4).length;
+            
+            // Auto-assign team if empty
+            if (team.length === 0 && inventory.length > 0) {
+                team = [...inventory].filter(i => i.rarity > 3).sort((a,b) => b.rarity - a.rarity).slice(0, 4);
+                renderTeam();
+                updateBattleUI();
+            }
+
+            renderGachaView();
+            startAnimation();
+        }
+
+        function createStarHtml(count) {
+            let html = '<div class="flex gap-0.5 mt-1">';
+            for(let i=0; i<count; i++) html += '<div class="w-1.5 h-1.5 rounded-full bg-yellow-400"></div>';
+            return html + '</div>';
+        }
+
+        function generateCardHtml(item, isMinimal = false, index = 0, isSelected = false) {
+            const is5 = item.rarity === 5;
+            const is4 = item.rarity === 4;
+            
+            if (isMinimal) {
+                let border = isSelected ? 'border-white ring-2 ring-blue-400' : (is5 ? 'border-yellow-400' : is4 ? 'border-purple-400' : 'border-blue-400');
+                let bg = is5 ? 'bg-yellow-900/60' : is4 ? 'bg-purple-900/50' : 'bg-blue-900/40';
+                
+                return `
+                    <div onclick="handleInventoryClick(${item.id})" class="relative w-full aspect-[3/4] rounded-lg border ${border} ${bg} flex flex-col items-center justify-center p-1 overflow-hidden transition-all hover:scale-105 cursor-pointer active:scale-95 ${isSelected ? 'scale-105 shadow-xl shadow-blue-500/20' : ''}">
+                        ${item.img ? `<img src="${item.img}" class="w-10 h-10 rounded-full object-cover mb-1 border border-white/20" referrerpolicy="no-referrer" />` : `<div class="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center text-lg font-bold mb-1">${item.name[0]}</div>`}
+                        <h3 class="text-[10px] text-center leading-tight font-bold text-white line-clamp-2">${item.name}</h3>
+                        ${createStarHtml(item.rarity)}
+                        ${isSelected ? `<div class="absolute top-1 right-1 bg-green-500 rounded-full p-0.5"><i data-lucide="check-circle" class="w-3 h-3 text-white"></i></div>` : ''}
+                    </div>
+                `;
+            }
+
+            // Full card for pull results
+            return `
+                <div class="animate-zoom-in relative w-32 h-48 sm:w-40 sm:h-64 rounded-xl border-2 ${is5 ? 'border-yellow-400 shadow-yellow-500/50' : is4 ? 'border-purple-400 shadow-purple-500/30' : 'border-blue-400 shadow-blue-500/20'} bg-gray-800 shadow-lg flex flex-col items-center justify-between p-2 overflow-hidden" style="animation-delay: ${index * 100 + 300}ms; opacity:0; animation-fill-mode: forwards;">
+                    <div class="absolute inset-0 opacity-30 blur-xl ${is5 ? 'bg-yellow-500' : is4 ? 'bg-purple-500' : 'bg-blue-500'}"></div>
+                    <div class="z-10 w-full text-center mt-2">
+                        ${item.img ? `<div class="mx-auto w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 ${is5 ? 'border-yellow-300' : 'border-purple-300'} overflow-hidden shadow-md"><img src="${item.img}" class="w-full h-full object-cover" referrerpolicy="no-referrer" /></div>` : `<div class="mx-auto w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-black/40 flex items-center justify-center text-2xl font-bold opacity-70">${item.name[0]}</div>`}
+                    </div>
+                    <div class="z-10 text-center w-full mb-2">
+                        <h3 class="font-bold text-sm sm:text-base leading-tight text-white">${item.name}</h3>
+                        <div class="flex justify-center">${createStarHtml(item.rarity)}</div>
+                        ${item.element ? `<p class="text-xs text-gray-400 mt-1 uppercase tracking-wider">${item.element}</p>` : ''}
+                    </div>
+                    ${is5 && item.pityResult ? `<div class="absolute top-2 left-2 text-[10px] px-1.5 py-0.5 rounded font-bold z-20 border ${item.pityResult === 'win' ? 'bg-green-600 border-green-400 text-white' : 'bg-red-900 border-red-500 text-red-200'}">${item.pityResult === 'win' ? 'WIN' : 'PERSO'}</div>` : ''}
+                    ${item.isNew ? `<div class="absolute top-2 right-2 bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded animate-pulse z-20">NEW</div>` : ''}
+                </div>
+            `;
+        }
+
+        // --- ANIMATION SYSTEM ---
+        function startAnimation() {
+            isAnimating = true;
+            document.getElementById('gacha-animation').style.display = 'flex';
+            
+            // Setup Meteor Colors
+            const meteor = document.getElementById('anim-meteor');
+            meteor.className = `absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full border-4 border-white z-20 animate-[bounce-custom_0.5s_infinite] shadow-[0_0_100px_30px_rgba(255,255,255,0.8)] ${highestRarityInPull === 5 ? 'bg-yellow-200 shadow-yellow-500' : highestRarityInPull === 4 ? 'bg-purple-200 shadow-purple-500' : 'bg-blue-200 shadow-blue-500'}`;
+            
+            setAnimPhase('travel');
+
+            animTimeouts.forEach(clearTimeout);
+            animTimeouts = [
+                setTimeout(() => setAnimPhase('flash'), 2000),
+                setTimeout(() => setAnimPhase('reveal'), 2100)
+            ];
+        }
+
+        function setAnimPhase(phase) {
+            animationPhase = phase;
+            document.getElementById('anim-phase-travel').classList.add('hidden');
+            document.getElementById('anim-phase-reveal').classList.add('hidden');
+            
+            const flash = document.getElementById('anim-phase-flash');
+
+            if (phase === 'travel') {
+                document.getElementById('anim-phase-travel').classList.remove('hidden');
+                document.getElementById('anim-skip-btn').innerHTML = '<i data-lucide="fast-forward" class="w-3 h-3"></i> Salta (Space)';
+                flash.classList.add('hidden');
+                flash.classList.remove('opacity-100');
+                flash.classList.add('opacity-0');
+            } else if (phase === 'flash') {
+                document.getElementById('anim-phase-travel').classList.remove('hidden'); // Keep travel behind
+                flash.classList.remove('hidden', 'opacity-0');
+                flash.classList.add('opacity-100');
+            } else if (phase === 'reveal') {
+                document.getElementById('anim-phase-reveal').classList.remove('hidden');
+                document.getElementById('anim-skip-btn').innerHTML = '<i data-lucide="x" class="w-3 h-3"></i> Chiudi (Space)';
+                document.getElementById('pull-results-grid').innerHTML = currentPullResults.map((item, idx) => generateCardHtml(item, false, idx)).join('');
+                // Start fading out flash
+                flash.classList.remove('opacity-100');
+                flash.classList.add('opacity-0');
+                setTimeout(() => flash.classList.add('hidden'), 1000);
+            }
+            lucide.createIcons();
+        }
+
+        function skipAnimation() {
+            animTimeouts.forEach(clearTimeout);
+            setAnimPhase('reveal');
+        }
+
+        function closeResult() {
+            isAnimating = false;
+            document.getElementById('gacha-animation').style.display = 'none';
+        }
+
+
+        // --- BATTLE LOGIC ---
+        function getTeamDps() {
+            return team.reduce((acc, char) => acc + (char.baseAtk || 50), 0);
+        }
+
+        function renderTeam() {
+            const container = document.getElementById('team-container');
+            let html = '';
+            for(let i=0; i<4; i++) {
+                const member = team[i];
+                if(member) {
+                    html += `
+                        <div class="w-24 sm:w-32 h-full bg-gray-800/50 rounded-lg border-2 border-dashed border-gray-700 flex items-center justify-center relative overflow-hidden cursor-pointer hover:bg-gray-800 transition-colors" onclick="toggleInventory(true)">
+                            <img src="${member.img || ''}" class="absolute inset-0 w-full h-full object-cover opacity-60" referrerpolicy="no-referrer" />
+                            <div class="z-10 text-center">
+                                <p class="font-bold text-xs sm:text-sm text-white drop-shadow-md truncate px-1">${member.name}</p>
+                                <p class="text-[10px] text-yellow-300">ATK: ${member.baseAtk || 50}</p>
+                            </div>
+                            <button class="absolute top-1 right-1 bg-red-500/80 p-1 rounded-full hover:bg-red-500 z-20" onclick="event.stopPropagation(); removeTeamMember(${member.id})">
+                                <i data-lucide="x" class="w-2 h-2 text-white"></i>
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="w-24 sm:w-32 h-full bg-gray-800/50 rounded-lg border-2 border-dashed border-gray-700 flex items-center justify-center relative overflow-hidden cursor-pointer hover:bg-gray-800 transition-colors" onclick="toggleInventory(true)">
+                            <span class="text-gray-600 text-xs text-center px-2">Slot Vuoto<br/>(Clicca per agg.)</span>
+                        </div>
+                    `;
+                }
+            }
+            container.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function removeTeamMember(id) {
+            team = team.filter(c => c.id !== id);
+            renderTeam();
+            updateBattleUI();
+        }
+
+        function attackEnemy(isAuto = false) {
+            if (team.length === 0) return;
+            
+            const dps = getTeamDps();
+            const dmg = Math.floor(dps * (isAuto ? 0.2 : 1) * (0.9 + Math.random() * 0.2));
+            
+            if (!isAuto) missionProgress.clicks++;
+
+            currentEnemyHp -= dmg;
+            const currentEnemyData = ENEMIES[enemyLevel % ENEMIES.length];
+            const maxHp = currentEnemyData.hp * (1 + (enemyLevel * 0.5));
+
+            if (currentEnemyHp <= 0) {
+                const reward = currentEnemyData.reward * (1 + Math.floor(enemyLevel / ENEMIES.length));
+                currency += reward;
+                updateCurrency();
+                enemyLevel++;
+                missionProgress.kills++;
+                
+                const nextEnemyData = ENEMIES[enemyLevel % ENEMIES.length];
+                currentEnemyHp = nextEnemyData.hp * (1 + (enemyLevel * 0.5));
+            }
+
+            updateBattleUI();
+        }
+
+        function updateBattleUI() {
+            if(activeTab !== 'battle') return;
+            const currentEnemyData = ENEMIES[enemyLevel % ENEMIES.length];
+            const maxHp = currentEnemyData.hp * (1 + (enemyLevel * 0.5));
+            const hpPercent = Math.max(0, (currentEnemyHp / maxHp) * 100);
+
+            document.getElementById('enemy-level-display').innerText = `Livello ${enemyLevel + 1}`;
+            document.getElementById('team-dps-display').innerText = getTeamDps().toLocaleString();
+            
+            const sprite = document.getElementById('enemy-sprite');
+            sprite.className = `w-32 h-32 sm:w-48 sm:h-48 rounded-full ${currentEnemyData.color} flex items-center justify-center shadow-[0_0_60px_rgba(0,0,0,0.5)] animate-pulse border-4 border-white/10 relative z-10`;
+            
+            document.getElementById('enemy-hp-bar').style.width = `${hpPercent}%`;
+            document.getElementById('enemy-hp-text').innerText = `${currentEnemyData.name}: ${Math.floor(currentEnemyHp).toLocaleString()} HP`;
+        }
+
+        // --- MISSIONS LOGIC ---
+        function generateNewMissions() {
+            const shuffled = [...MISSION_POOL].sort(() => 0.5 - Math.random());
+            activeMissions = shuffled.slice(0, 3).map((m, i) => ({ ...m, uniqueId: Date.now() + i }));
+            claimedMissionIds = [];
+            missionProgress = { pulls: 0, kills: 0, clicks: 0, rare_pull: 0 };
+            updateMissionsUI();
+        }
+
+        function claimMission(id, reward) {
+            if (claimedMissionIds.includes(id)) return;
+            claimedMissionIds.push(id);
+            currency += reward;
+            updateCurrency();
+            updateMissionsUI();
+        }
+
+        function updateMissionsUI() {
+            if(activeTab !== 'missions') return;
+            const container = document.getElementById('missions-container');
+            let html = '';
+            
+            activeMissions.forEach(mission => {
+                let current = missionProgress[mission.type] || 0;
+                const isComplete = current >= mission.target;
+                const isClaimed = claimedMissionIds.includes(mission.uniqueId);
+
+                html += `
+                    <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 flex justify-between items-center transition-all hover:border-gray-600">
+                        <div>
+                            <h3 class="font-bold text-lg">${mission.text}</h3>
+                            <div class="w-48 h-2 bg-gray-700 rounded-full mt-2 overflow-hidden">
+                                <div class="h-full bg-blue-500 transition-all duration-500" style="width: ${Math.min(100, (current/mission.target)*100)}%"></div>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-1">${current} / ${mission.target}</p>
+                        </div>
+                        <div class="flex flex-col items-end gap-2">
+                            <div class="flex items-center gap-1 bg-black/30 px-2 py-1 rounded text-xs">
+                                <div class="w-3 h-3 rounded-full bg-gradient-to-br from-purple-400 to-blue-600"></div>
+                                <span>${mission.reward}</span>
+                            </div>
+                            <button 
+                                ${!isComplete || isClaimed ? 'disabled' : ''}
+                                onclick="claimMission(${mission.uniqueId}, ${mission.reward})"
+                                class="px-4 py-2 rounded-lg font-bold text-sm transition-all ${isClaimed ? 'bg-gray-700 text-gray-500' : isComplete ? 'bg-yellow-500 text-black hover:bg-yellow-400 shadow-lg shadow-yellow-500/20' : 'bg-gray-700 text-gray-400 cursor-not-allowed'}"
+                            >
+                                ${isClaimed ? 'Riscosso' : 'Riscatta'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+
+            const allClaimed = activeMissions.length > 0 && activeMissions.every(m => claimedMissionIds.includes(m.uniqueId));
+            const btnContainer = document.getElementById('new-missions-btn-container');
+            if (allClaimed) {
+                btnContainer.classList.remove('hidden');
+            } else {
+                btnContainer.classList.add('hidden');
+            }
+        }
+
+        // --- INVENTORY LOGIC ---
+        function toggleInventory(show) {
+            const modal = document.getElementById('modal-inventory');
+            if (show) {
+                renderInventoryGrid();
+                document.getElementById('inventory-count').innerText = `(${inventory.length})`;
+                document.getElementById('inventory-battle-hint').style.display = activeTab === 'battle' ? 'block' : 'none';
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            } else {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                document.getElementById('sort-dropdown').classList.add('hidden');
+            }
+        }
+
+        function toggleSortDropdown() {
+            document.getElementById('sort-dropdown').classList.toggle('hidden');
+        }
+
+        function setSortOrder(order) {
+            sortOrder = order;
+            document.getElementById('sort-dropdown').classList.add('hidden');
+            renderInventoryGrid();
+        }
+
+        function getSortedInventory() {
+            let sorted = [...inventory];
+            if (sortOrder === 'rarity_desc') sorted.sort((a, b) => b.rarity - a.rarity || b.id - a.id);
+            else sorted.sort((a, b) => b.id - a.id); // recent
+            return sorted;
+        }
+
+        function renderInventoryGrid() {
+            const container = document.getElementById('inventory-grid');
+            if (inventory.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center text-gray-500 mt-20">Inventario Vuoto</div>`;
+                return;
+            }
+            
+            const sorted = getSortedInventory();
+            container.innerHTML = sorted.map(item => {
+                const isSelected = team.some(c => c.id === item.id);
+                return generateCardHtml(item, true, 0, isSelected);
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function handleInventoryClick(id) {
+            const item = inventory.find(i => i.id === id);
+            if (!item) return;
+
+            if (activeTab === 'battle') {
+                if (team.some(c => c.id === id)) {
+                    team = team.filter(c => c.id !== id);
+                } else {
+                    if (team.length < 4 && item.rarity > 3) team.push(item);
+                    else if (item.rarity <= 3) alert("Puoi equipaggiare solo Personaggi (4 o 5 stelle)!");
+                    else alert("Squadra al completo!");
+                }
+                renderTeam();
+                updateBattleUI();
+                renderInventoryGrid(); // Update selection outlines
+            } else {
+                // Show item details (simplified alert for vanilla JS, can be expanded to a modal)
+                alert(`${item.name}\nRarità: ${item.rarity} Stelle\nDescrizione: ${item.desc || 'Nessuna descrizione'}\nATK Base: ${item.baseAtk || 50}`);
+            }
+        }
+
+        // Start App
+        window.onload = init;
+    </script>
+</body>
+</html>
