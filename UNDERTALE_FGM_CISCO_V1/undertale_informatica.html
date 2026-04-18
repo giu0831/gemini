@@ -123,6 +123,59 @@
         .action-buttons { display:flex; align-items:flex-end; gap:10px; margin-bottom:20px; }
         .action-btn-mobile { width:55px; height:55px; border-radius:50%; background:rgba(255,255,255,.1); border:2px solid rgba(255,255,255,.4); display:flex; justify-content:center; align-items:center; font-size:24px; color:white; cursor:pointer; }
 
+        /* ── ANIMAZIONI MORTE BOSS ── */
+        @keyframes soulAppear {
+            0%   { transform:translate(-50%,-50%) scale(0) rotate(-20deg); opacity:0; }
+            55%  { transform:translate(-50%,-50%) scale(1.45) rotate(6deg); opacity:1; }
+            100% { transform:translate(-50%,-50%) scale(1) rotate(0deg); opacity:1; }
+        }
+        @keyframes soulShake {
+            0%,100%{ transform:translate(-50%,-50%) scale(1); }
+            20%   { transform:translate(calc(-50% + 8px),-50%) scale(1.06); }
+            40%   { transform:translate(calc(-50% - 8px),-50%) scale(0.94); }
+            60%   { transform:translate(-50%,calc(-50% + 7px)) scale(1.06); }
+            80%   { transform:translate(-50%,calc(-50% - 7px)) scale(0.94); }
+        }
+        @keyframes soulDissolve {
+            0%   { transform:translate(-50%,-50%) scale(1); opacity:1; filter:brightness(1); }
+            15%  { filter:brightness(5); }
+            35%  { filter:brightness(1) saturate(0); transform:translate(-50%,-50%) scale(1.05); }
+            55%  { filter:brightness(10); transform:translate(-50%,-50%) scale(1.1); }
+            75%  { transform:translate(-50%,-50%) scale(0.55) rotate(12deg); opacity:0.6; filter:brightness(18) saturate(0); }
+            100% { transform:translate(-50%,-50%) scale(0); opacity:0; filter:brightness(30); }
+        }
+        @keyframes fragFly {
+            0%   { transform:translate(-50%,-50%) scale(1); opacity:1; }
+            60%  { opacity:0.8; }
+            100% { transform:translate(calc(-50% + var(--fx)), calc(-50% + var(--fy))) scale(0.1) rotate(120deg); opacity:0; }
+        }
+        @keyframes bossFlash {
+            0%,100%{ filter:grayscale(100%) contrast(180%) brightness(90%); }
+            25%   { filter:brightness(30) saturate(0); }
+            50%   { filter:grayscale(100%) contrast(180%) brightness(90%); }
+            75%   { filter:brightness(25) saturate(0); }
+        }
+        @keyframes rageFlash {
+            0%,100%{ filter:grayscale(100%) contrast(180%) brightness(90%); }
+            50%   { filter:grayscale(0%) contrast(200%) brightness(150%) sepia(1) hue-rotate(-20deg); }
+        }
+        .boss-sprite.raging { animation: floatHard 1.5s infinite ease-in-out, rageFlash 0.6s infinite !important; }
+        #boss-software.raging { animation: floatSoft 1.2s infinite ease-in-out, rageFlash 0.6s infinite 0.1s !important; }
+        .soul-main {
+            position:absolute; top:50%; left:50%;
+            transform:translate(-50%,-50%) scale(0);
+            font-size:80px; z-index:50; color:#ff2222;
+            text-shadow: 0 0 20px #ff0000, 0 0 40px #ff0000, 0 0 60px #880000;
+            pointer-events:none; font-family:Arial;
+        }
+        .soul-fragment {
+            position:absolute; top:50%; left:50%;
+            transform:translate(-50%,-50%);
+            font-size:24px; color:#ff2222; z-index:51;
+            pointer-events:none;
+            text-shadow: 0 0 8px #ff0000;
+        }
+
         @media (max-width:600px) {
             #game-container, #stats-area, #buttons-area { width:95%; }
             #battle-box { width:95%; }
@@ -266,6 +319,8 @@ const BOSS_MAX_HP = 10000;
 let fgmHP = BOSS_MAX_HP, ciscoHP = BOSS_MAX_HP;
 let fgmRage = 0, ciscoRage = 0; // incrementa ad ogni colpo ricevuto
 let lastHitBoss = null; // 'fgm' | 'cisco' | 'both'
+let fgmDead = false, ciscoDead = false;
+let soloRage = false, soloRageAnnounced = false;
 
 let sysRestartBuff = false, blockNameChoice = false;
 
@@ -568,7 +623,16 @@ function updateButtons(){ buttons.forEach((btn,i)=>btn.className=i===selectedBut
 // ═══════════════════════════════════════════════════════
 function showMainMenu(){
     gameState='MAIN_MENU'; textArea.style.display='block';
-    textArea.innerHTML='* F.G.M e CISCO TASSI ti fissano.<br>* Attaccano in sincronia.';
+    let aliveNames = [];
+    if(!fgmDead) aliveNames.push('F.G.M');
+    if(!ciscoDead) aliveNames.push('CISCO TASSI');
+    if(aliveNames.length === 2){
+        textArea.innerHTML='* F.G.M e CISCO TASSI ti fissano.<br>* Attaccano in sincronia.';
+    } else if(aliveNames.length === 1){
+        textArea.innerHTML=`* ${aliveNames[0]} ti fissa.<br>* Rabbia totale.`;
+    } else {
+        textArea.innerHTML='* Silenzio.';
+    }
     targetBar.style.display='none'; canvas.style.display='none';
     battleBox.style.height='160px'; battleBox.style.width=window.innerWidth<=600?'95%':'540px';
     updateButtons();
@@ -584,7 +648,7 @@ function selectAction(){
         menuSelectionIndex=0; updateMenuSelectionUI();
     } else if(selectedButton===2){
         gameState='MENU_SELECTION';
-        menuOptions=["* Chiavetta USB (Cura 50 HP)","* Energy drink (Cura 25 HP)"];
+        menuOptions=["* Pausa Caffè (Cura HP MAX)","* Chiavetta USB (Cura 50 HP)","* Energy drink (Cura 25 HP)"];
         menuSelectionIndex=0; updateMenuSelectionUI();
     } else if(selectedButton===3){
         textArea.innerHTML="* La connessione di rete non permette la fuga."; setTimeout(bossTurn,2000);
@@ -606,6 +670,7 @@ function executeMenuAction(){
     else if(opt.includes('Spegni')){ textArea.innerHTML='* Provi a spegnere e riaccendere.<br>* Il sistema rallenta. Alleviato.'; sysRestartBuff=true; }
     else if(opt.includes('CTRL')){ textArea.innerHTML='* Task Manager non risponde.<br>* Anche lui ha paura.'; sysRestartBuff=false; }
     else if(opt.includes('Formatta')){ textArea.innerHTML='* Tenti di formattare.<br>* Errore: accesso negato.<br>* Hai comunque fatto ridere il prof.'; }
+    else if(opt.includes('Pausa Caffè')){ playerHP=MAX_HP; updateHP(); textArea.innerHTML='* Ti sei goduto una pausa caffè.<br>* L\'aroma ti ricarica completamente.<br>* HP completamente ripristinati!'; }
     else if(opt.includes('Chiavetta')){ playerHP=Math.min(MAX_HP,playerHP+50); updateHP(); textArea.innerHTML='* Dati ripristinati dalla USB!'; }
     else if(opt.includes('Energy')){ playerHP=Math.min(MAX_HP,playerHP+25); updateHP(); textArea.innerHTML='* La caffeina ti regge in piedi.'; }
     setTimeout(bossTurn,2500);
@@ -618,7 +683,10 @@ let targetEnemy = 0; // 0 = F.G.M, 1 = CISCO TASSI
 
 function startTargeting(){
     gameState = 'TARGET_SELECT';
-    targetEnemy = 0;
+    // Se un boss è morto, seleziona direttamente quello vivo
+    if(fgmDead)       targetEnemy = 1;
+    else if(ciscoDead) targetEnemy = 0;
+    else               targetEnemy = 0;
     targetBar.style.display = 'none';
     canvas.style.display = 'none';
     textArea.style.display = 'block';
@@ -627,16 +695,27 @@ function startTargeting(){
 
 function updateTargetSelectUI(){
     const enemies = [
-        { name:'F.G.M',       hp:fgmHP,    max:BOSS_MAX_HP },
-        { name:'CISCO TASSI', hp:ciscoHP,  max:BOSS_MAX_HP }
+        { name:'F.G.M',       dead:fgmDead },
+        { name:'CISCO TASSI', dead:ciscoDead }
     ];
+    // Se rimane solo un boss vivo, vai dritto alla mira senza mostrare la lista
+    let alive = enemies.filter((_,i)=> !(i===0?fgmDead:ciscoDead));
+    if(alive.length === 1){
+        // Salta la selezione — inizia subito il targeting
+        gameState = 'TARGETING';
+        textArea.style.display = 'none';
+        targetBar.style.display = 'block';
+        targetX = 0; targetDirection = 1;
+        targetLoop();
+        return;
+    }
     let html = '';
     enemies.forEach((e,i)=>{
+        if(e.dead) return; // non mostrare boss morti
         let cursor = (i===targetEnemy)
             ? "<span style='color:red;margin-right:10px;'>❤</span>"
             : "<span style='margin-right:26px;'></span>";
-        let dead = e.hp <= 0 ? " <span style='color:#666;font-size:20px;'>(K.O.)</span>" : '';
-        html += `<div style="margin-bottom:4px;">${cursor}${e.name}${dead}</div>`;
+        html += `<div style="margin-bottom:4px;">${cursor}${e.name}</div>`;
     });
     textArea.innerHTML = html;
 }
@@ -644,13 +723,19 @@ function updateTargetSelectUI(){
 function targetSelectInput(key){
     if(gameState !== 'TARGET_SELECT') return;
     if(key==='ArrowUp'||key==='ArrowLeft'){
-        targetEnemy = (targetEnemy - 1 + 2) % 2;
+        // Salta i morti
+        let next = targetEnemy;
+        do { next = (next - 1 + 2) % 2; } while((next===0?fgmDead:ciscoDead) && next!==targetEnemy);
+        targetEnemy = next;
         updateTargetSelectUI();
     } else if(key==='ArrowDown'||key==='ArrowRight'){
-        targetEnemy = (targetEnemy + 1) % 2;
+        let next = targetEnemy;
+        do { next = (next + 1) % 2; } while((next===0?fgmDead:ciscoDead) && next!==targetEnemy);
+        targetEnemy = next;
         updateTargetSelectUI();
     } else if(key==='z'||key==='Z'||key==='Enter'){
-        // Nemico selezionato — mostra barra di mira
+        // Blocca se il boss selezionato è morto (sicurezza extra)
+        if((targetEnemy===0 && fgmDead)||(targetEnemy===1 && ciscoDead)) return;
         gameState = 'TARGETING';
         textArea.style.display = 'none';
         targetBar.style.display = 'block';
@@ -712,12 +797,46 @@ function stopTarget(){
             document.getElementById('boss-hardware').classList.remove('dodging');
             document.getElementById('boss-software').classList.remove('dodging');
 
+            // Controlla nuove morti
+            let newDeathBoss = null;
+            if(targetEnemy === 0 && fgmHP <= 0 && !fgmDead){
+                fgmDead = true; newDeathBoss = 'fgm';
+            } else if(targetEnemy === 1 && ciscoHP <= 0 && !ciscoDead){
+                ciscoDead = true; newDeathBoss = 'cisco';
+            }
+
             if(fgmHP <= 0 && ciscoHP <= 0){
-                gameState='WIN';
-                textArea.style.display='block'; canvas.style.display='none';
-                battleBox.style.width=window.innerWidth<=600?'95%':'540px';
-                battleBox.style.height='160px';
-                textArea.innerHTML='* F.G.M e CISCO TASSI crollano sulla cattedra.<br>* Ma domani sono di nuovo lì.';
+                // Entrambi morti
+                if(newDeathBoss){
+                    playBossDeathAnim(newDeathBoss, ()=>{
+                        gameState='WIN';
+                        textArea.style.display='block'; canvas.style.display='none';
+                        battleBox.style.width=window.innerWidth<=600?'95%':'540px';
+                        battleBox.style.height='160px';
+                        textArea.innerHTML='* F.G.M e CISCO TASSI crollano sulla cattedra.<br>* Le loro anime si spezzano.<br>* Ma domani sono di nuovo lì.';
+                    });
+                } else {
+                    gameState='WIN';
+                    textArea.style.display='block'; canvas.style.display='none';
+                    battleBox.style.width=window.innerWidth<=600?'95%':'540px';
+                    battleBox.style.height='160px';
+                    textArea.innerHTML='* F.G.M e CISCO TASSI crollano sulla cattedra.<br>* Le loro anime si spezzano.<br>* Ma domani sono di nuovo lì.';
+                }
+            } else if(newDeathBoss){
+                // Uno appena morto — animazione poi RAGE
+                playBossDeathAnim(newDeathBoss, ()=>{
+                    // Entra in RAGE totale
+                    if(newDeathBoss === 'fgm'){
+                        ciscoRage = 10;
+                        document.getElementById('boss-software').classList.add('raging');
+                    } else {
+                        fgmRage = 10;
+                        document.getElementById('boss-hardware').classList.add('raging');
+                    }
+                    soloRage = true;
+                    soloRageAnnounced = false;
+                    bossTurn();
+                });
             } else {
                 bossTurn();
             }
@@ -744,7 +863,7 @@ function startDefendPhase(){
     gameState='DEFEND';
     bubbleLeft.style.display='none'; bubbleRight.style.display='none';
     textArea.style.display='none'; canvas.style.display='block';
-    currentDefendDuration=430+Math.floor(Math.random()*180);
+    currentDefendDuration = soloRage ? 520+Math.floor(Math.random()*160) : 430+Math.floor(Math.random()*180);
     resizeBox(400,260);
     currentSoulMode='red'; soul.x=200; soul.y=130;
     defendFrames=0; binaries=[]; hardBlocks=[]; lasers=[]; missiles=[]; viruses=[];
@@ -800,14 +919,119 @@ function spawnVirus(){
     viruses.push({x:Math.random()*cw, y:Math.random()*ch, vx, vy, text:'⚠'});
 }
 
+function spawnRageHoming(){
+    let cw=canvas.width, ch=canvas.height;
+    let ox, oy, r=Math.random();
+    // Spawn vicino al giocatore (da tutti i lati)
+    if(r<0.25){ox=-20; oy=soul.y+(Math.random()-0.5)*40;}
+    else if(r<0.5){ox=cw+20; oy=soul.y+(Math.random()-0.5)*40;}
+    else if(r<0.75){ox=soul.x+(Math.random()-0.5)*40; oy=-20;}
+    else{ox=soul.x+(Math.random()-0.5)*40; oy=ch+20;}
+    let angle=Math.atan2(soul.y-oy, soul.x-ox);
+    let spd=(4.5+Math.random()*2)*getSpd();
+    missiles.push({x:ox, y:oy, vx:Math.cos(angle)*spd, vy:Math.sin(angle)*spd, angle, homing:true});
+}
+
+// ═══════════════════════════════════════════════════════
+// ANIMAZIONE MORTE BOSS — sprite sparisce, anima si spacca
+// ═══════════════════════════════════════════════════════
+function playBossDeathAnim(bossId, callback){
+    gameState = 'BOSS_DEATH';
+    const spriteId = bossId==='fgm' ? 'boss-hardware' : 'boss-software';
+    const phId     = bossId==='fgm' ? 'ph-hardware'   : 'ph-software';
+    const sprite   = document.getElementById(spriteId);
+    const ph       = document.getElementById(phId);
+    const entity   = sprite.closest('.boss-entity');
+    const bossName = bossId==='fgm' ? 'F.G.M' : 'CISCO TASSI';
+
+    // Mostra testo drammatico
+    textArea.style.display='block'; canvas.style.display='none';
+    battleBox.style.height='160px';
+    battleBox.style.width=window.innerWidth<=600?'95%':'540px';
+    textArea.innerHTML=`* ${bossName}...`;
+
+    // Flash bianco sullo sprite
+    const visEl = (sprite && sprite.style.display!=='none') ? sprite : ph;
+    if(visEl){ visEl.style.animation='bossFlash 0.3s ease-out'; }
+
+    setTimeout(()=>{
+        // Nascondi sprite
+        if(sprite) sprite.style.display='none';
+        if(ph && ph.style.display!=='none') ph.style.display='none';
+
+        textArea.innerHTML=`* ${bossName} è scomparso...<br>* La sua anima appare.`;
+
+        // Crea anima principale
+        const soulEl = document.createElement('div');
+        soulEl.className = 'soul-main';
+        soulEl.textContent = '❤';
+        entity.style.position = 'relative';
+        entity.appendChild(soulEl);
+
+        requestAnimationFrame(()=>{
+            soulEl.style.animation = 'soulAppear 0.55s ease-out forwards';
+        });
+
+        setTimeout(()=>{
+            // Tremore — anima che sta per spaccarsi
+            textArea.innerHTML=`* L'anima di ${bossName} trema.<br>* Si spacca in mille pezzi.`;
+            soulEl.style.animation = 'soulShake 0.15s ease-in-out 4';
+
+            setTimeout(()=>{
+                // Frammenti che volano via
+                const frags = [
+                    {fx:'-90px', fy:'-70px'}, {fx:'90px', fy:'-70px'},
+                    {fx:'-100px',fy:'10px'},   {fx:'100px', fy:'10px'},
+                    {fx:'-30px', fy:'-100px'}, {fx:'30px',  fy:'100px'},
+                    {fx:'-60px', fy:'70px'},   {fx:'60px',  fy:'-80px'},
+                ];
+                frags.forEach(pos=>{
+                    const f = document.createElement('div');
+                    f.className = 'soul-fragment';
+                    f.textContent = '❤';
+                    f.style.cssText += `--fx:${pos.fx};--fy:${pos.fy};animation:fragFly 0.65s ease-out forwards;`;
+                    entity.appendChild(f);
+                    setTimeout(()=>{ if(entity.contains(f)) entity.removeChild(f); }, 700);
+                });
+
+                // Dissolvi anima principale
+                soulEl.style.animation = 'soulDissolve 0.65s ease-out forwards';
+
+                setTimeout(()=>{
+                    if(entity.contains(soulEl)) entity.removeChild(soulEl);
+                    callback();
+                }, 750);
+            }, 620);
+        }, 650);
+    }, 320);
+}
+
 // ═══════════════════════════════════════════════════════
 // TURNO BOSS
 // ═══════════════════════════════════════════════════════
 function bossTurn(){
     gameState='BOSS_DIALOGUE'; targetBar.style.display='none'; textArea.style.display='block';
-    bubbleLeft.innerText  = nextHW();
-    bubbleRight.innerText = nextSW();
-    bubbleLeft.style.display='block'; bubbleRight.style.display='block';
+    // Annuncio RAGE (solo prima volta)
+    if(soloRage && !soloRageAnnounced){
+        soloRageAnnounced = true;
+        bubbleLeft.style.display='none'; bubbleRight.style.display='none';
+        if(fgmDead){
+            bubbleRight.innerText = 'TI DISTRUGGO!!!';
+            bubbleRight.style.display='block';
+            textArea.innerHTML='* CISCO TASSI è SOLO.<br>* FURIA ASSOLUTA SBLOCCATA.<br>* I suoi attacchi sono completamente mirati.';
+        } else {
+            bubbleLeft.innerText = 'NON ESISTERAI PIÙ!!!';
+            bubbleLeft.style.display='block';
+            textArea.innerHTML='* F.G.M è SOLO.<br>* FURIA ASSOLUTA SBLOCCATA.<br>* I bastoni e i caffè piovono ovunque.';
+        }
+        setTimeout(startDefendPhase, 2800);
+        return;
+    }
+
+    bubbleLeft.style.display='none'; bubbleRight.style.display='none';
+    // Mostra bolla solo per boss vivi
+    if(!fgmDead){   bubbleLeft.innerText  = nextHW(); bubbleLeft.style.display='block';  }
+    if(!ciscoDead){ bubbleRight.innerText = nextSW(); bubbleRight.style.display='block'; }
     let avgRage = (fgmRage + ciscoRage) / 2;
     let patternNames = [
         '* BASTONE WAVE in arrivo.',
@@ -822,10 +1046,19 @@ function bossTurn(){
     let nextPat = Math.floor((defendFrames+1) / 200) % Math.min(pCount, 7);
     let patLine = avgRage >= 2 ? '<br>* ' + patternNames[nextPat] : '';
     let msg;
-    if(avgRage < 2)       msg = '* (Preparati. Entrambi.)';
-    else if(avgRage < 4)  msg = '* Gli occhi dei prof brillano.' + patLine;
-    else if(avgRage < 7)  msg = '* F.G.M stringe il bastone.' + patLine;
-    else                  msg = '* MODALITA FURIA.' + patLine;
+    // Personalizza in base a chi è vivo
+    if(!fgmDead && !ciscoDead){
+        if(avgRage < 2)       msg = '* (Preparati. Entrambi.)';
+        else if(avgRage < 4)  msg = '* Gli occhi dei prof brillano.' + patLine;
+        else if(avgRage < 7)  msg = '* F.G.M stringe il bastone.' + patLine;
+        else                  msg = '* MODALITA FURIA.' + patLine;
+    } else if(!ciscoDead){
+        if(avgRage < 5)  msg = '* CISCO TASSI ti fissa con odio.' + patLine;
+        else             msg = '* CISCO TASSI ha perso la testa.' + patLine;
+    } else {
+        if(avgRage < 5)  msg = '* F.G.M stringe il bastone con entrambe le mani.' + patLine;
+        else             msg = '* F.G.M. FURIA SENZA LIMITI.' + patLine;
+    }
     textArea.innerHTML = msg;
 }
 
@@ -971,6 +1204,46 @@ function defendLoop(timestamp){
         if(defendFrames % getCiscoRate(35) === 0) spawnMissile();
     }
 
+    // ═══════════════════════════════════════════════════════
+    // SOLO RAGE — quando un boss è morto, attacchi mirati brutali
+    // ═══════════════════════════════════════════════════════
+    if(soloRage){
+        // Arena si restringe dopo un po'
+        if(defendFrames === 1) resizeBox(320, 220);
+
+        if(fgmDead){
+            // CISCO TASSI è solo: pioggia sigarette mirate + caffè homing + laser mirati
+            if(defendFrames % 10 === 0) spawnBinary();
+            if(defendFrames % 14 === 0){
+                // Sigarette mirate al giocatore
+                binaries.push({x:soul.x+(Math.random()-0.5)*60, y:-20, vy:(4+Math.random()*2)*getSpd(), rot:(Math.random()-0.5)*0.3, smokeOff:Math.random()*10, aimed:true});
+            }
+            if(defendFrames % 18 === 0) spawnRageHoming();
+            if(defendFrames % 25 === 0) spawnRageHoming();
+            if(defendFrames % 40 === 0) spawnLaser();
+            if(defendFrames % 60 === 0) spawnVirus();
+            if(defendFrames % 55 === 0) changeSoulMode(currentSoulMode==='red'?'blue':'red');
+        } else {
+            // F.G.M è solo: bastoni da tutte le altezze mirati + caffè homing + laser
+            if(defendFrames % 12 === 0){
+                // Bastone mirato (y del giocatore)
+                let fromLeft = Math.random()>0.5;
+                hardBlocks.push({x:fromLeft?-200:cw+200, y:Math.max(0,soul.y-9), w:200, h:18, dx:fromLeft?6*getSpd():-6*getSpd()});
+            }
+            if(defendFrames % 18 === 0){
+                // Bastone secondo, leggermente sfasato
+                let fromLeft = Math.random()<0.5;
+                let offY = (Math.random()-0.5)*50;
+                hardBlocks.push({x:fromLeft?-200:cw+200, y:Math.max(0,soul.y+offY), w:180, h:18, dx:fromLeft?5.5*getSpd():-5.5*getSpd()});
+            }
+            if(defendFrames % 22 === 0) spawnRageHoming();
+            if(defendFrames % 35 === 0) spawnLaser();
+            if(defendFrames % 28 === 0) spawnBinary();
+            if(defendFrames % 75 === 0) spawnVirus();
+            if(defendFrames % 65 === 0) changeSoulMode(currentSoulMode==='red'?'blue':'red');
+        }
+    }
+
     // ── BASTONI ──
     for(let i=hardBlocks.length-1;i>=0;i--){
         let b=hardBlocks[i]; b.x+=b.dx;
@@ -1025,7 +1298,19 @@ function defendLoop(timestamp){
 
     // ── CAFFE ──
     for(let i=missiles.length-1;i>=0;i--){
-        let m=missiles[i]; m.x+=m.vx; m.y+=m.vy;
+        let m=missiles[i];
+        // Homing: guida graduale verso il giocatore
+        if(m.homing){
+            let targetAngle=Math.atan2(soul.y-m.y, soul.x-m.x);
+            let da=targetAngle-m.angle;
+            while(da>Math.PI) da-=2*Math.PI;
+            while(da<-Math.PI) da+=2*Math.PI;
+            m.angle+=da*0.055;
+            let spd=Math.hypot(m.vx,m.vy);
+            m.vx=Math.cos(m.angle)*spd;
+            m.vy=Math.sin(m.angle)*spd;
+        }
+        m.x+=m.vx; m.y+=m.vy;
         ctx.save(); ctx.translate(m.x,m.y); ctx.rotate(m.angle);
         ctx.fillStyle='white'; ctx.fillRect(-10,-10,20,18);
         ctx.beginPath(); ctx.arc(0,8,10,0,Math.PI); ctx.fill();
@@ -1036,7 +1321,8 @@ function defendLoop(timestamp){
         for(let s=0;s<2;s++){ctx.beginPath();ctx.moveTo(-4+s*6,-10);ctx.quadraticCurveTo(-6+s*6,-16,-4+s*6,-20);ctx.stroke();}
         ctx.restore();
         if(Math.hypot(sx-m.x,sy-m.y)<sr+12) takeDamage();
-        if(m.x<-80||m.x>cw+80||m.y<-80||m.y>ch+80) missiles.splice(i,1);
+        let oob = m.homing ? (m.x<-150||m.x>cw+150||m.y<-150||m.y>ch+150) : (m.x<-80||m.x>cw+80||m.y<-80||m.y>ch+80);
+        if(oob) missiles.splice(i,1);
     }
 
     // ── VIRUS ──
