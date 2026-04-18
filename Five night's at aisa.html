@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Five Nights at Aisa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+        body {
+            font-family: 'VT323', monospace;
+            background-color: black;
+            color: white;
+            user-select: none;
+            overflow: hidden;
+        }
+
+        /* Effetto rumore / statica */
+        .static-noise {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
+            opacity: 0.15;
+            pointer-events: none;
+            z-index: 50;
+            animation: staticAnim 0.2s infinite;
+        }
+
+        @keyframes staticAnim {
+            0% { transform: translate(0, 0); }
+            10% { transform: translate(-2px, 2px); }
+            20% { transform: translate(2px, -2px); }
+            30% { transform: translate(-2px, -2px); }
+            40% { transform: translate(2px, 2px); }
+            50% { transform: translate(-1px, 1px); }
+            60% { transform: translate(1px, -1px); }
+            70% { transform: translate(-1px, -1px); }
+            80% { transform: translate(1px, 1px); }
+            90% { transform: translate(0, 2px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        /* Scansioni (Scanlines) */
+        .scanlines {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 3px 100%;
+            z-index: 49;
+            pointer-events: none;
+        }
+
+        /* Ufficio */
+        .office-bg {
+            background: radial-gradient(circle at center, #2a2a35 0%, #0a0a0c 100%);
+            box-shadow: inset 0 0 100px black;
+        }
+
+        .door-container {
+            position: absolute;
+            bottom: 10%;
+            width: 15%;
+            height: 65%;
+            background-color: #050505;
+            border: 4px solid #1a1a1a;
+            overflow: hidden;
+        }
+
+        .door {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 0%;
+            background-image: repeating-linear-gradient(0deg, #333 0px, #333 20px, #222 20px, #222 22px);
+            border-bottom: 5px solid #111;
+            transition: height 0.3s ease-in-out;
+        }
+
+        .door.closed { height: 100%; }
+
+        .control-panel {
+            position: absolute;
+            top: 40%;
+            width: 40px;
+            height: 100px;
+            background: #222;
+            border: 2px solid #444;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            border-radius: 5px;
+        }
+
+        .btn-door, .btn-light {
+            width: 25px; height: 25px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid black;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+        }
+
+        .btn-door { background-color: #aa0000; }
+        .btn-door.active { background-color: #ff3333; box-shadow: 0 0 10px red; }
+        .btn-light { background-color: #aaaaaa; }
+        .btn-light.active { background-color: #ffffff; box-shadow: 0 0 10px white; }
+
+        /* Illuminazione porte */
+        .hallway-light {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0);
+            pointer-events: none;
+            transition: background 0.1s;
+        }
+        .hallway-light.on { background: rgba(255, 255, 220, 0.4); }
+
+        /* Telecamera e Mappa (Responsive) */
+        .map-container {
+            position: absolute;
+            bottom: 80px;
+            right: 20px;
+            width: 45vw;
+            height: 45vw;
+            max-width: 350px;
+            max-height: 350px;
+            min-width: 220px;
+            min-height: 220px;
+            border: 4px solid #4b5563;
+            background-color: rgba(17, 24, 39, 0.8);
+            z-index: 40;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Adattamento per schermi molto bassi (es. smartphone in orizzontale) */
+        @media (max-height: 500px) {
+            .map-container {
+                bottom: 60px;
+                right: 10px;
+                min-width: 180px;
+                min-height: 180px;
+                width: 60vh;
+                height: 60vh;
+            }
+            .cam-btn {
+                font-size: 0.6rem !important;
+                padding: 2px 4px !important;
+            }
+            .map-you {
+                font-size: 0.6rem !important;
+                bottom: 2% !important;
+            }
+        }
+
+        .cam-btn {
+            position: absolute;
+            background: #333;
+            border: 2px solid #555;
+            color: white;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            transition: all 0.2s;
+            transform: translate(-50%, -50%); /* Centra il bottone sulle coordinate */
+            white-space: nowrap;
+        }
+        .cam-btn:hover { background: #555; }
+        .cam-btn.active { background: #00aa00; border-color: #00ff00; }
+
+        .map-you {
+            position: absolute;
+            bottom: 4%;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #eab308;
+            font-size: 0.8rem;
+            border: 1px solid #eab308;
+            padding: 2px 6px;
+            background: black;
+        }
+
+        /* Coordinate esatte dei bottoni (sempre dentro la mappa) */
+        #btn-cam-1 { top: 15%; left: 50%; }
+        #btn-cam-2 { top: 35%; left: 50%; }
+        #btn-cam-3 { top: 30%; left: 85%; }
+        #btn-cam-4 { top: 45%; left: 15%; }
+        #btn-cam-5 { top: 65%; left: 15%; }
+        #btn-cam-6 { top: 65%; left: 35%; }
+        #btn-cam-7 { top: 85%; left: 35%; }
+        #btn-cam-8 { top: 65%; left: 65%; }
+        #btn-cam-9 { top: 85%; left: 65%; }
+
+        /* Animazione Jumpscare */
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+
+        .jumpscare-anim {
+            animation: shake 0.05s infinite;
+            filter: contrast(200%) brightness(150%) sepia(50%) hue-rotate(-50deg) saturate(300%);
+        }
+
+        /* 6 AM screen */
+        @keyframes fadeToWhite {
+            from { background-color: black; color: black; }
+            to { background-color: white; color: black; }
+        }
+        .win-anim {
+            animation: fadeToWhite 4s forwards;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen relative">
+
+    <!-- Menu Principale -->
+    <div id="main-menu" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black">
+        <h1 class="text-6xl md:text-8xl font-bold text-red-600 mb-2 text-center drop-shadow-[0_0_10px_red]">Five Nights at Aisa</h1>
+        <p class="text-xl mb-12 text-gray-400">Sopravvivi dalle 12:00 AM alle 6:00 AM</p>
+        <button onclick="startGame()" class="text-3xl hover:text-red-500 transition-colors border-2 border-white hover:border-red-500 px-6 py-2 rounded">
+            Nuova Partita
+        </button>
+        <div class="mt-8 text-gray-500 text-center max-w-md px-4">
+            Usa le telecamere per monitorare i movimenti di Aisa. <br>
+            Chiudi le porte se appare nei corridoi (luce). <br>
+            Fai attenzione all'energia!
+        </div>
+    </div>
+
+    <!-- Container del Gioco -->
+    <div id="game-container" class="hidden w-full h-full relative">
+        
+        <!-- UI Globale -->
+        <div class="absolute top-4 right-8 z-40 text-right">
+            <div id="time-display" class="text-5xl font-bold">12 AM</div>
+            <div class="text-xl text-gray-300">Notte 1</div>
+        </div>
+
+        <div class="absolute bottom-8 left-8 z-40 text-left">
+            <div class="text-2xl mb-1">Energia: <span id="power-display">100</span>%</div>
+            <div class="text-xl">Uso: <span id="usage-display" class="text-green-500">🟩</span></div>
+        </div>
+
+        <div class="absolute bottom-4 w-full flex justify-center z-40">
+            <button id="cam-toggle-btn" onclick="toggleCameras()" class="px-16 py-3 bg-gray-800 border-t-4 border-l-4 border-r-4 border-gray-600 text-2xl hover:bg-gray-700 opacity-70 hover:opacity-100 transition-opacity rounded-t-xl">
+                ▲ TELECAMERE ▲
+            </button>
+        </div>
+
+        <!-- UFFICIO -->
+        <div id="office-view" class="absolute inset-0 office-bg">
+            <!-- Scrivania (puramente visiva) -->
+            <div class="absolute bottom-0 left-1/4 right-1/4 height-[20%] bg-zinc-800 border-t-8 border-zinc-900 z-10" style="height: 25%;">
+                <div class="w-full h-full flex justify-center items-center">
+                    <div class="w-32 h-20 bg-black rounded flex items-center justify-center opacity-30">Ventilatore</div>
+                </div>
+            </div>
+
+            <!-- Porta Sinistra -->
+            <div class="door-container left-[10%]">
+                <div id="left-door" class="door"></div>
+                <div id="left-light-overlay" class="hallway-light"></div>
+                <!-- Immagine di Aisa alla porta (nascosta di default) -->
+                <img id="aisa-left" src="https://lh3.googleusercontent.com/a-/ALV-UjX5WaAKPyFOdPE72EV2dbV2IvSo1Xbdv12mYFqvBUM9gWaaMoRU=s75-c" class="absolute top-1/4 left-0 w-full object-cover hidden" alt="Aisa">
+            </div>
+            <!-- Controlli Sinistra -->
+            <div class="control-panel left-[5%]">
+                <div id="btn-door-left" class="btn-door" onclick="toggleDoor('left')"></div>
+                <div id="btn-light-left" class="btn-light" onclick="toggleLight('left')"></div>
+            </div>
+
+            <!-- Porta Destra -->
+            <div class="door-container right-[10%]">
+                <div id="right-door" class="door"></div>
+                <div id="right-light-overlay" class="hallway-light"></div>
+                <!-- Immagine di Aisa alla porta -->
+                <img id="aisa-right" src="https://lh3.googleusercontent.com/a-/ALV-UjX5WaAKPyFOdPE72EV2dbV2IvSo1Xbdv12mYFqvBUM9gWaaMoRU=s75-c" class="absolute top-1/4 left-0 w-full object-cover hidden" alt="Aisa">
+            </div>
+            <!-- Controlli Destra -->
+            <div class="control-panel right-[5%]">
+                <div id="btn-door-right" class="btn-door" onclick="toggleDoor('right')"></div>
+                <div id="btn-light-right" class="btn-light" onclick="toggleLight('right')"></div>
+            </div>
+        </div>
+
+        <!-- TELECAMERE -->
+        <div id="camera-view" class="absolute inset-0 bg-black hidden z-30">
+            <div class="static-noise"></div>
+            <div class="scanlines"></div>
+            
+            <div class="absolute top-4 left-4 text-3xl font-bold text-white tracking-widest z-40">
+                <span class="text-red-500 animate-pulse">●</span> REC
+            </div>
+
+            <div class="absolute top-16 left-4 text-4xl text-gray-300 font-bold z-40 drop-shadow-md border-b-2 border-gray-500 pb-2" id="cam-name">
+                CAM 1 - Palco
+            </div>
+
+            <!-- Feed Video (Immagine della stanza + Aisa) -->
+            <div class="w-full h-full flex items-center justify-center opacity-40 mix-blend-screen bg-gray-900" id="cam-feed-bg">
+                <!-- Aisa nella telecamera -->
+                <img id="aisa-cam" src="https://lh3.googleusercontent.com/a-/ALV-UjX5WaAKPyFOdPE72EV2dbV2IvSo1Xbdv12mYFqvBUM9gWaaMoRU=s75-c" class="w-64 h-64 object-cover filter grayscale drop-shadow-[0_0_15px_white]" alt="Aisa">
+            </div>
+
+            <!-- Mappa Telecamere (Rinnovata) -->
+            <div class="map-container">
+                <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiPjxwYXRoIGQ9Ik01MCAyMEgyNTBWMzBINTBaTTUwIDkwSDI1MFYxMDBINDBaIiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIvPjwvc3ZnPg==')] opacity-30"></div>
+                
+                <button onclick="switchCam(1)" id="btn-cam-1" class="cam-btn active">CAM 1</button>
+                <button onclick="switchCam(2)" id="btn-cam-2" class="cam-btn">CAM 2</button>
+                <button onclick="switchCam(3)" id="btn-cam-3" class="cam-btn">CAM 3</button>
+                <button onclick="switchCam(4)" id="btn-cam-4" class="cam-btn">CAM 4</button>
+                <button onclick="switchCam(5)" id="btn-cam-5" class="cam-btn">CAM 5</button>
+                <button onclick="switchCam(6)" id="btn-cam-6" class="cam-btn">CAM 6</button>
+                <button onclick="switchCam(7)" id="btn-cam-7" class="cam-btn">CAM 7</button>
+                <button onclick="switchCam(8)" id="btn-cam-8" class="cam-btn">CAM 8</button>
+                <button onclick="switchCam(9)" id="btn-cam-9" class="cam-btn">CAM 9</button>
+                
+                <div class="map-you">TU</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Schermata Jumpscare -->
+    <div id="jumpscare-screen" class="hidden absolute inset-0 z-50 bg-black flex items-center justify-center overflow-hidden">
+        <img src="https://lh3.googleusercontent.com/a-/ALV-UjX5WaAKPyFOdPE72EV2dbV2IvSo1Xbdv12mYFqvBUM9gWaaMoRU=s75-c" class="w-full h-full object-cover jumpscare-anim scale-150" alt="Aisa Jumpscare">
+        <div class="static-noise opacity-50"></div>
+    </div>
+
+    <!-- Schermata Game Over -->
+    <div id="game-over-screen" class="hidden absolute inset-0 z-[60] bg-black flex flex-col items-center justify-center">
+        <h1 class="text-7xl text-red-600 font-bold mb-8 animate-pulse">SEI MORTO</h1>
+        <p class="text-2xl text-gray-400 mb-8">Aisa ti ha trovato.</p>
+        <button onclick="location.reload()" class="text-2xl text-white border border-white px-6 py-2 hover:bg-white hover:text-black transition-colors">Riprova</button>
+    </div>
+
+    <!-- Schermata Vittoria -->
+    <div id="win-screen" class="hidden absolute inset-0 z-[60] bg-black flex flex-col items-center justify-center win-anim">
+        <h1 class="text-8xl font-bold mb-4">6:00 AM</h1>
+        <p class="text-3xl text-gray-700">Hai Sopravvissuto!</p>
+        <button onclick="location.reload()" class="mt-12 text-2xl border border-gray-800 text-gray-800 px-6 py-2 hover:bg-gray-800 hover:text-white transition-colors">Torna al Menu</button>
+    </div>
+
+    <script>
+        // --- Audio Context per Suoni Generati ---
+        let actx;
+        function initAudio() {
+            if (!actx) {
+                actx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playBeep(freq = 400, type = 'sine', duration = 0.1, vol = 0.1) {
+            if (!actx) return;
+            const osc = actx.createOscillator();
+            const gain = actx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, actx.currentTime);
+            gain.gain.setValueAtTime(vol, actx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(actx.destination);
+            osc.start();
+            osc.stop(actx.currentTime + duration);
+        }
+
+        function playJumpscareSound() {
+            if (!actx) return;
+            const osc = actx.createOscillator();
+            const gain = actx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(100, actx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(1200, actx.currentTime + 0.5);
+            
+            gain.gain.setValueAtTime(1, actx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + 2.5);
+            
+            osc.connect(gain);
+            gain.connect(actx.destination);
+            osc.start();
+            osc.stop(actx.currentTime + 3);
+        }
+
+        function playPowerOutSound() {
+            if (!actx) return;
+            const osc = actx.createOscillator();
+            const gain = actx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(200, actx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(20, actx.currentTime + 2);
+            gain.gain.setValueAtTime(0.5, actx.currentTime);
+            gain.gain.linearRampToValueAtTime(0, actx.currentTime + 2);
+            osc.connect(gain);
+            gain.connect(actx.destination);
+            osc.start();
+            osc.stop(actx.currentTime + 2);
+        }
+
+        function playWinChime() {
+            if (!actx) return;
+            const notes = [523.25, 659.25, 783.99, 1046.50]; // C E G C
+            notes.forEach((freq, i) => {
+                setTimeout(() => playBeep(freq, 'sine', 1.5, 0.2), i * 500);
+            });
+        }
+
+        // --- Variabili di Stato del Gioco ---
+        let gameLoop;
+        let aiLoop;
+        let power = 100.0;
+        let timeHour = 0; // 0 = 12 AM, 1 = 1 AM, etc.
+        let timeTicks = 0;
+        const ticksPerHour = 45; // 45 secondi reali = 1 ora in gioco (totale ~4.5 minuti)
+        
+        let state = {
+            leftDoor: false,
+            rightDoor: false,
+            leftLight: false,
+            rightLight: false,
+            cameraOpen: false,
+            currentCam: 1,
+            aisaLocation: 1 // 1 a 9: Telecamere, 10: Porta SX, 11: Porta DX
+        };
+
+        let isGameOver = false;
+
+        const camNames = {
+            1: "CAM 1 - Palco Principale",
+            2: "CAM 2 - Sala Mensa",
+            3: "CAM 3 - Bagni",
+            4: "CAM 4 - Cucina",
+            5: "CAM 5 - Ripostiglio",
+            6: "CAM 6 - Corridoio Ovest",
+            7: "CAM 7 - Angolo Ovest",
+            8: "CAM 8 - Corridoio Est",
+            9: "CAM 9 - Angolo Est"
+        };
+
+        // --- Funzioni Principali ---
+
+        function startGame() {
+            initAudio();
+            document.getElementById('main-menu').classList.add('hidden');
+            document.getElementById('game-container').classList.remove('hidden');
+            
+            // Inizia i loop
+            gameLoop = setInterval(updateGame, 1000);
+            aiLoop = setInterval(updateAI, 3000); // L'IA valuta di muoversi ogni 3 secondi
+            
+            updateOfficeView();
+        }
+
+        function updateGame() {
+            if (isGameOver) return;
+
+            // Aggiornamento Tempo
+            timeTicks++;
+            if (timeTicks >= ticksPerHour) {
+                timeTicks = 0;
+                timeHour++;
+                document.getElementById('time-display').innerText = (timeHour === 0 ? 12 : timeHour) + " AM";
+                if (timeHour >= 6) {
+                    winGame();
+                    return;
+                }
+            }
+
+            // Calcolo Uso Energia (Base 1)
+            let usage = 1;
+            if (state.leftDoor) usage++;
+            if (state.rightDoor) usage++;
+            if (state.leftLight) usage++;
+            if (state.rightLight) usage++;
+            if (state.cameraOpen) usage++;
+
+            // Aggiorna Display Uso
+            let usageStr = "";
+            for(let i=0; i<usage; i++) {
+                if(i==0) usageStr += "🟩";
+                else if(i<3) usageStr += "🟨";
+                else usageStr += "🟥";
+            }
+            document.getElementById('usage-display').innerText = usageStr;
+
+            // Consumo Energia (0.1% a tacca di utilizzo al secondo)
+            power -= (usage * 0.15);
+            if (power <= 0) {
+                power = 0;
+                powerOutage();
+            }
+            document.getElementById('power-display').innerText = Math.floor(power);
+
+            // Spegni luci automaticamente se non stiamo premendo il tasto (tipo FNAF 1)
+            // In questa versione le lasciamo come toggle per semplicità mobile/web.
+        }
+
+        // --- Intelligenza Artificiale ---
+        function updateAI() {
+            if (isGameOver) return;
+
+            // Probabilità di movimento (aumenta con le ore)
+            let aiLevel = 4 + timeHour; // Livello 4 alle 12 AM, cresce fino a 9 alle 5 AM
+            
+            if (Math.random() * 20 < aiLevel) {
+                moveAisa();
+            }
+
+            // Controllo Attacco alla porta
+            if (state.aisaLocation === 10) {
+                if (!state.leftDoor && Math.random() < 0.3) {
+                    // Aisa entra
+                    triggerJumpscare();
+                } else if (state.leftDoor && Math.random() < 0.4) {
+                    // Aisa se ne va perché la porta è chiusa
+                    state.aisaLocation = 2; // Torna in mensa
+                    updateCameraFeed();
+                }
+            } else if (state.aisaLocation === 11) {
+                if (!state.rightDoor && Math.random() < 0.3) {
+                    triggerJumpscare();
+                } else if (state.rightDoor && Math.random() < 0.4) {
+                    state.aisaLocation = 2;
+                    updateCameraFeed();
+                }
+            }
+        }
+
+        function moveAisa() {
+            let loc = state.aisaLocation;
+            let nextLoc = loc;
+
+            // Pathing logico esteso
+            if (loc === 1) nextLoc = 2;
+            else if (loc === 2) {
+                const r = Math.random();
+                if(r < 0.2) nextLoc = 3; // Bagni
+                else if(r < 0.4) nextLoc = 4; // Cucina
+                else if(r < 0.7) nextLoc = 6; // Cor Ovest
+                else nextLoc = 8; // Cor Est
+            }
+            else if (loc === 3) nextLoc = 2; // Torna in mensa
+            else if (loc === 4) nextLoc = 2; // Torna in mensa
+            else if (loc === 5) nextLoc = 6; // Dal ripostiglio al Corridoio Ovest
+            else if (loc === 6) nextLoc = Math.random() > 0.3 ? 7 : 5; // Angolo Ovest o Ripostiglio
+            else if (loc === 7) nextLoc = 10; // Dalla CAM 7 alla Porta Sinistra
+            else if (loc === 8) nextLoc = 9; // Corridoio Est -> Angolo Est
+            else if (loc === 9) nextLoc = 11; // Dalla CAM 9 alla Porta Destra
+            
+            // Effetto statico quando si muove se la telecamera è aperta
+            if (state.cameraOpen) {
+                playBeep(100, 'square', 0.1, 0.05);
+                const feed = document.getElementById('cam-feed-bg');
+                feed.style.opacity = '0.1';
+                setTimeout(() => feed.style.opacity = '0.4', 200);
+            }
+
+            state.aisaLocation = nextLoc;
+            updateCameraFeed();
+            updateOfficeView();
+        }
+
+        // --- Controlli Ufficio ---
+
+        function toggleDoor(side) {
+            if (power <= 0) return;
+            playBeep(200, 'square', 0.1);
+            
+            if (side === 'left') {
+                state.leftDoor = !state.leftDoor;
+                const doorEl = document.getElementById('left-door');
+                const btn = document.getElementById('btn-door-left');
+                state.leftDoor ? doorEl.classList.add('closed') : doorEl.classList.remove('closed');
+                state.leftDoor ? btn.classList.add('active') : btn.classList.remove('active');
+            } else {
+                state.rightDoor = !state.rightDoor;
+                const doorEl = document.getElementById('right-door');
+                const btn = document.getElementById('btn-door-right');
+                state.rightDoor ? doorEl.classList.add('closed') : doorEl.classList.remove('closed');
+                state.rightDoor ? btn.classList.add('active') : btn.classList.remove('active');
+            }
+            updateGame(); // Aggiorna subito l'uso
+        }
+
+        function toggleLight(side) {
+            if (power <= 0) return;
+            playBeep(600, 'triangle', 0.05);
+
+            if (side === 'left') {
+                state.leftLight = !state.leftLight;
+                if(state.leftLight) state.rightLight = false; // Solo una luce alla volta per risparmio
+            } else {
+                state.rightLight = !state.rightLight;
+                if(state.rightLight) state.leftLight = false;
+            }
+
+            updateOfficeView();
+            updateGame();
+        }
+
+        function updateOfficeView() {
+            // Aggiorna visibilità luci e pulsanti
+            document.getElementById('left-light-overlay').className = `hallway-light ${state.leftLight ? 'on' : ''}`;
+            document.getElementById('btn-light-left').className = `btn-light ${state.leftLight ? 'active' : ''}`;
+            
+            document.getElementById('right-light-overlay').className = `hallway-light ${state.rightLight ? 'on' : ''}`;
+            document.getElementById('btn-light-right').className = `btn-light ${state.rightLight ? 'active' : ''}`;
+
+            // Controlla se Aisa è visibile alle porte
+            const aisaLeft = document.getElementById('aisa-left');
+            const aisaRight = document.getElementById('aisa-right');
+
+            if (state.aisaLocation === 10 && state.leftLight && !state.leftDoor) {
+                aisaLeft.classList.remove('hidden');
+            } else {
+                aisaLeft.classList.add('hidden');
+            }
+
+            if (state.aisaLocation === 11 && state.rightLight && !state.rightDoor) {
+                aisaRight.classList.remove('hidden');
+            } else {
+                aisaRight.classList.add('hidden');
+            }
+        }
+
+        // --- Controlli Telecamere ---
+
+        function toggleCameras() {
+            if (power <= 0) return;
+            state.cameraOpen = !state.cameraOpen;
+            
+            const camView = document.getElementById('camera-view');
+            const btn = document.getElementById('cam-toggle-btn');
+
+            if (state.cameraOpen) {
+                playBeep(800, 'square', 0.1);
+                camView.classList.remove('hidden');
+                btn.innerText = "▼ CHIUDI ▼";
+                updateCameraFeed();
+            } else {
+                playBeep(300, 'square', 0.1);
+                camView.classList.add('hidden');
+                btn.innerText = "▲ TELECAMERE ▲";
+            }
+            updateGame();
+        }
+
+        function switchCam(id) {
+            if (power <= 0) return;
+            playBeep(500, 'sine', 0.05);
+            state.currentCam = id;
+            
+            // Aggiorna UI pulsanti
+            for(let i=1; i<=9; i++) {
+                const btn = document.getElementById(`btn-cam-${i}`);
+                if(btn) btn.classList.remove('active');
+            }
+            const activeBtn = document.getElementById(`btn-cam-${id}`);
+            if(activeBtn) activeBtn.classList.add('active');
+            
+            // Effetto cambio telecamera
+            const feed = document.getElementById('cam-feed-bg');
+            feed.style.opacity = '0';
+            setTimeout(() => {
+                updateCameraFeed();
+                feed.style.opacity = '0.4';
+            }, 100);
+        }
+
+        function updateCameraFeed() {
+            document.getElementById('cam-name').innerText = camNames[state.currentCam];
+            const aisaCam = document.getElementById('aisa-cam');
+            
+            // Mostra Aisa nella telecamera se si trova lì
+            if (state.aisaLocation === state.currentCam) {
+                aisaCam.classList.remove('hidden');
+                // Posiziona casualmente l'immagine per dare un senso di movimento nei frame
+                const x = Math.floor(Math.random() * 20) - 10;
+                const y = Math.floor(Math.random() * 20) - 10;
+                aisaCam.style.transform = `translate(${x}px, ${y}px) scale(${1 + Math.random()*0.2})`;
+            } else {
+                aisaCam.classList.add('hidden');
+            }
+        }
+
+        // --- Eventi Finali ---
+
+        function powerOutage() {
+            // Spegni tutto
+            state.leftDoor = false;
+            state.rightDoor = false;
+            state.leftLight = false;
+            state.rightLight = false;
+            state.cameraOpen = false;
+            
+            document.getElementById('left-door').classList.remove('closed');
+            document.getElementById('right-door').classList.remove('closed');
+            document.getElementById('camera-view').classList.add('hidden');
+            document.getElementById('cam-toggle-btn').classList.add('hidden');
+            document.getElementById('office-view').style.background = 'black';
+            updateOfficeView();
+
+            playPowerOutSound();
+
+            // Attendi un po' prima del jumpscare inevitabile
+            setTimeout(() => {
+                if (!isGameOver) triggerJumpscare();
+            }, Math.random() * 5000 + 3000); // 3-8 secondi
+        }
+
+        function triggerJumpscare() {
+            if (isGameOver) return;
+            isGameOver = true;
+            clearInterval(gameLoop);
+            clearInterval(aiLoop);
+
+            // Chiudi le telecamere forzatamente se aperte
+            document.getElementById('camera-view').classList.add('hidden');
+
+            // Suono e schermo
+            playJumpscareSound();
+            const jumpScreen = document.getElementById('jumpscare-screen');
+            jumpScreen.classList.remove('hidden');
+
+            setTimeout(() => {
+                jumpScreen.classList.add('hidden');
+                document.getElementById('game-over-screen').classList.remove('hidden');
+            }, 1500);
+        }
+
+        function winGame() {
+            if (isGameOver) return;
+            isGameOver = true;
+            clearInterval(gameLoop);
+            clearInterval(aiLoop);
+
+            playWinChime();
+            document.getElementById('game-container').classList.add('hidden');
+            document.getElementById('win-screen').classList.remove('hidden');
+        }
+
+    </script>
+</body>
+</html>
