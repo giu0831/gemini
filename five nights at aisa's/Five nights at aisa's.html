@@ -41,7 +41,6 @@
             100% { transform: translate(0, 0); }
         }
 
-        /* Scansioni (Scanlines) */
         .scanlines {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -51,19 +50,13 @@
             pointer-events: none;
         }
 
-        /* Ufficio */
-        .office-bg {
-            background: radial-gradient(circle at center, #2a2a35 0%, #0a0a0c 100%);
-            box-shadow: inset 0 0 100px black;
+        /* Ufficio (Sfondo panoramico Unificato) */
+        .office-wall-texture {
+            background-color: #2a2a35;
+            background-image: repeating-linear-gradient(90deg, rgba(0,0,0,0.2) 0px, rgba(0,0,0,0.2) 2px, transparent 2px, transparent 40px), radial-gradient(circle at center, #3a3a45 0%, #1a1a20 100%);
         }
 
         .door-container {
-            position: absolute;
-            bottom: 10%;
-            width: 15%;
-            height: 65%;
-            background-color: #050505;
-            border: 4px solid #1a1a1a;
             overflow: hidden;
         }
 
@@ -77,44 +70,23 @@
 
         .door.closed { height: 100%; }
 
-        .control-panel {
-            position: absolute;
-            top: 40%;
-            width: 40px;
-            height: 100px;
-            background: #222;
-            border: 2px solid #444;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-around;
-            align-items: center;
-            border-radius: 5px;
-        }
-
         .btn-door, .btn-light {
             width: 25px; height: 25px;
             border-radius: 50%;
             cursor: pointer;
             border: 2px solid black;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+            transition: transform 0.1s, box-shadow 0.1s;
         }
 
-        .btn-door { background-color: #aa0000; }
-        .btn-door.active { background-color: #ff3333; box-shadow: 0 0 10px red; }
-        .btn-light { background-color: #aaaaaa; }
-        .btn-light.active { background-color: #ffffff; box-shadow: 0 0 10px white; }
-
-        /* Illuminazione porte */
-        .hallway-light {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255, 255, 255, 0);
-            pointer-events: none;
-            transition: background 0.1s;
+        @media (min-width: 768px) {
+            .btn-door, .btn-light { width: 35px; height: 35px; }
         }
-        .hallway-light.on { background: rgba(255, 255, 220, 0.4); }
 
-        /* Telecamera e Mappa (Responsive) */
+        .btn-door { background-color: #aa0000; box-shadow: 0 4px 0 #4a0000; }
+        .btn-door.active { background-color: #ff3333; box-shadow: 0 0 15px red; transform: translateY(4px); }
+        .btn-light { background-color: #eeeeee; box-shadow: 0 4px 0 #888; }
+        .btn-light.active { background-color: #ffffff; box-shadow: 0 0 15px white; transform: translateY(4px); }
+
         .map-container {
             position: absolute;
             bottom: 80px;
@@ -140,14 +112,8 @@
                 width: 60vh;
                 height: 60vh;
             }
-            .cam-btn {
-                font-size: 0.6rem !important;
-                padding: 2px 4px !important;
-            }
-            .map-you {
-                font-size: 0.6rem !important;
-                bottom: 2% !important;
-            }
+            .cam-btn { font-size: 0.6rem !important; padding: 2px 4px !important; }
+            .map-you { font-size: 0.6rem !important; bottom: 2% !important; }
         }
 
         .cam-btn {
@@ -180,7 +146,7 @@
 
         #btn-cam-1 { top: 15%; left: 50%; }
         #btn-cam-2 { top: 35%; left: 50%; }
-        #btn-cam-3 { top: 30%; left: 85%; } /* Tenda dei Pirati */
+        #btn-cam-3 { top: 30%; left: 85%; }
         #btn-cam-4 { top: 45%; left: 15%; }
         #btn-cam-5 { top: 65%; left: 15%; }
         #btn-cam-6 { top: 65%; left: 35%; }
@@ -188,7 +154,6 @@
         #btn-cam-8 { top: 65%; left: 65%; }
         #btn-cam-9 { top: 85%; left: 65%; }
 
-        /* Animazioni e Immagini Camere */
         .cam-aisa {
             width: 16rem;
             height: 16rem;
@@ -225,7 +190,6 @@
             animation: fadeToWhite 4s forwards;
         }
 
-        /* Stili Menu Principale FNAF */
         .menu-aisa-img {
             position: absolute;
             right: 0;
@@ -243,10 +207,7 @@
         }
 
         @media (max-width: 768px) {
-            .menu-aisa-img {
-                width: 200%;
-                transform: translateX(35%);
-            }
+            .menu-aisa-img { width: 200%; transform: translateX(35%); }
         }
 
         @keyframes menuTwitch {
@@ -261,14 +222,10 @@
 
     <!-- Menu Principale -->
     <div id="main-menu" class="absolute inset-0 z-50 bg-black overflow-hidden">
-        <!-- Effetti statici in background -->
         <div class="static-noise opacity-40"></div>
         <div class="scanlines opacity-60"></div>
+        <img src="sfondo_Aisa.png" onerror="this.src='Aisa.png'" class="menu-aisa-img" alt="Aisa Menu">
 
-        <!-- Aisa tagliata a destra con animazione scatto -->
-        <img src="https://lh3.googleusercontent.com/a-/ALV-UjX5WaAKPyFOdPE72EV2dbV2IvSo1Xbdv12mYFqvBUM9gWaaMoRU=s75-c" class="menu-aisa-img" alt="Aisa Menu">
-
-        <!-- Contenuto del menu -->
         <div class="relative z-10 flex flex-col justify-between h-full p-8 md:p-16">
             <div>
                 <h1 class="text-6xl md:text-8xl font-bold text-white leading-tight drop-shadow-lg tracking-wide">
@@ -277,25 +234,23 @@
             </div>
 
             <div class="flex flex-col gap-4 mb-24 md:mb-16">
-                <div class="group cursor-pointer w-max flex items-center" onclick="startGame()">
+                <div class="group cursor-pointer w-max flex items-center" onclick="startGame(true)">
                     <span class="text-4xl md:text-5xl text-white opacity-0 group-hover:opacity-100 transition-opacity mr-4">>></span>
                     <span class="text-4xl md:text-5xl text-white group-hover:text-gray-300 transition-colors tracking-widest">
                         New Game
                     </span>
                 </div>
-                <div class="group cursor-not-allowed w-max flex items-center opacity-50">
-                    <span class="text-4xl md:text-5xl text-white opacity-0 mr-4">>></span>
-                    <span class="text-4xl md:text-5xl text-white tracking-widest">
+                <div id="btn-continue" class="group cursor-not-allowed w-max flex items-center opacity-50">
+                    <span class="text-4xl md:text-5xl text-white opacity-0 group-hover:opacity-100 transition-opacity mr-4">>></span>
+                    <span id="text-continue" class="text-4xl md:text-5xl text-white tracking-widest">
                         Continue
                     </span>
                 </div>
             </div>
 
-            <!-- Footer info -->
             <div class="absolute bottom-4 left-8 text-white opacity-70 text-xl">v 1.13</div>
             <div class="absolute bottom-4 right-8 text-white opacity-70 text-xl">©2024 Aisa Edition</div>
             
-            <!-- Piccole istruzioni semi-nascoste per aiutare -->
             <div class="absolute bottom-12 left-8 text-gray-500 max-w-sm text-sm hidden md:block opacity-60">
                 Luci: Sx (Bonnie), Dx (Chica/Freddy).<br>
                 Cam 3: Controlla Foxy!
@@ -306,15 +261,15 @@
     <!-- Container del Gioco -->
     <div id="game-container" class="hidden w-full h-full relative">
         
-        <!-- UI Globale -->
-        <div class="absolute top-4 right-8 z-40 text-right">
-            <div id="time-display" class="text-5xl font-bold">12 AM</div>
-            <div class="text-xl text-gray-300">Notte 1</div>
+        <!-- UI Globale (Sempre fissa a schermo) -->
+        <div class="absolute top-4 right-8 z-40 text-right pointer-events-none">
+            <div id="time-display" class="text-5xl font-bold drop-shadow-md">12 AM</div>
+            <div id="night-display" class="text-xl text-gray-300 drop-shadow-md">Notte 1</div>
         </div>
 
-        <div class="absolute bottom-8 left-8 z-40 text-left">
-            <div class="text-2xl mb-1">Energia: <span id="power-display">100</span>%</div>
-            <div class="text-xl">Uso: <span id="usage-display" class="text-green-500">🟩</span></div>
+        <div class="absolute bottom-8 left-8 z-40 text-left pointer-events-none">
+            <div class="text-2xl mb-1 drop-shadow-md">Energia: <span id="power-display">100</span>%</div>
+            <div class="text-xl drop-shadow-md">Uso: <span id="usage-display" class="text-green-500">🟩</span></div>
         </div>
 
         <div class="absolute bottom-4 w-full flex justify-center z-40">
@@ -323,38 +278,120 @@
             </button>
         </div>
 
-        <!-- UFFICIO (Ripristinato allo stile originale senza immagine) -->
-        <div id="office-view" class="absolute inset-0 office-bg">
-            <div class="absolute bottom-0 left-1/4 right-1/4 bg-zinc-800 border-t-8 border-zinc-900 z-10" style="height: 25%;">
-                <div class="w-full h-full flex justify-center items-center">
-                    <div class="w-32 h-20 bg-black rounded flex items-center justify-center opacity-30">
-                        Ventilatore
+        <!-- UFFICIO PANORAMICO -->
+        <div id="office-view" class="absolute inset-0 overflow-hidden bg-black z-0">
+            <!-- Questo div è largo 140vw e scivolerà a destra e sinistra -->
+            <div id="office-panner" class="absolute top-0 left-0 h-full w-[140vw]">
+                
+                <!-- Muro principale unico in background (z-0) -->
+                <div class="absolute inset-0 office-wall-texture z-[0]"></div>
+
+                <!-- Pavimento a scacchi 3D (z-1) -->
+                <div class="absolute bottom-0 left-0 w-full h-[35%] overflow-hidden z-[1] shadow-[inset_0_20px_50px_rgba(0,0,0,0.8)]">
+                    <div class="absolute top-0 left-[-50%] w-[200%] h-[200%] bg-[#111]" style="background-image: linear-gradient(45deg, #050505 25%, transparent 25%), linear-gradient(-45deg, #050505 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #050505 75%), linear-gradient(-45deg, transparent 75%, #050505 75%); background-size: 50px 50px; transform: perspective(300px) rotateX(60deg); transform-origin: top;"></div>
+                </div>
+
+                <!-- LATO SINISTRO -->
+                <!-- Buco Porta Sx (z-2) -->
+                <div class="absolute left-[4%] bottom-[10%] w-[10%] h-[70%] bg-black border-4 border-gray-900 z-[2] shadow-[inset_0_0_30px_black] overflow-hidden">
+                    <div id="left-light-overlay" class="absolute inset-0 bg-white opacity-0 transition-opacity duration-100 z-10"></div>
+                    <img id="aisa-left" src="Aisa.png" class="absolute bottom-0 right-[-10%] w-[120%] h-[90%] object-contain hidden z-0 drop-shadow-[0_0_15px_blue]">
+                </div>
+
+                <!-- Porta Sx Scorrevole (z-3) -->
+                <div class="door-container absolute left-[4%] bottom-[10%] w-[10%] h-[70%] z-[3] border-none pointer-events-none">
+                    <div id="left-door" class="door"></div>
+                </div>
+
+                <!-- Buco Finestra Sx (z-2) -->
+                <div class="absolute left-[18%] bottom-[30%] w-[6%] h-[35%] bg-black border-4 border-gray-800 z-[2] shadow-[inset_0_0_30px_black] overflow-hidden">
+                    <div id="left-window-overlay" class="absolute inset-0 bg-white opacity-0 transition-opacity duration-100 z-10"></div>
+                    <img id="aisa-window-left" src="Aisa.png" class="absolute bottom-[0%] right-[-80%] w-[250%] h-[120%] object-contain hidden z-0 drop-shadow-[0_0_15px_blue]">
+                </div>
+
+                <!-- Pulsanti Sx (z-4) -->
+                <div class="absolute left-[1%] top-[45%] w-[2.5%] min-w-[45px] h-[18%] bg-gray-400 border-4 border-gray-600 rounded flex flex-col justify-evenly items-center shadow-[10px_10px_20px_black] z-[4]">
+                    <div id="btn-door-left" class="btn-door" onclick="toggleDoor('left')"></div>
+                    <div id="btn-light-left" class="btn-light" onclick="toggleLight('left')"></div>
+                </div>
+
+
+                <!-- LATO DESTRO -->
+                <!-- Buco Porta Dx (z-2) -->
+                <div class="absolute right-[4%] bottom-[10%] w-[10%] h-[70%] bg-black border-4 border-gray-900 z-[2] shadow-[inset_0_0_30px_black] overflow-hidden">
+                    <div id="right-light-overlay" class="absolute inset-0 bg-white opacity-0 transition-opacity duration-100 z-10"></div>
+                    <img id="aisa-right" src="Aisa.png" class="absolute bottom-0 left-[0%] w-[120%] h-[90%] object-contain hidden z-0 drop-shadow-[0_0_15px_yellow]">
+                </div>
+
+                <!-- Porta Dx Scorrevole (z-3) -->
+                <div class="door-container absolute right-[4%] bottom-[10%] w-[10%] h-[70%] z-[3] border-none pointer-events-none">
+                    <div id="right-door" class="door"></div>
+                </div>
+
+                <!-- Buco Finestra Dx (z-2) -->
+                <div class="absolute right-[18%] bottom-[30%] w-[6%] h-[35%] bg-black border-4 border-gray-800 z-[2] shadow-[inset_0_0_30px_black] overflow-hidden">
+                    <div id="right-window-overlay" class="absolute inset-0 bg-white opacity-0 transition-opacity duration-100 z-10"></div>
+                    <img id="aisa-window-right" src="Aisa.png" class="absolute bottom-[0%] left-[-80%] w-[250%] h-[120%] object-contain hidden z-0 drop-shadow-[0_0_15px_yellow]">
+                </div>
+
+                <!-- Pulsanti Dx (z-4) -->
+                <div class="absolute right-[1%] top-[45%] w-[2.5%] min-w-[45px] h-[18%] bg-gray-400 border-4 border-gray-600 rounded flex flex-col justify-evenly items-center shadow-[-10px_10px_20px_black] z-[4]">
+                    <div id="btn-door-right" class="btn-door" onclick="toggleDoor('right')"></div>
+                    <div id="btn-light-right" class="btn-light" onclick="toggleLight('right')"></div>
+                </div>
+
+                <!-- SCRIVANIA CENTRALE ALZATA E INGRANDITA (z-5) -->
+                <div class="absolute left-[28%] bottom-0 w-[44%] h-[38%] bg-zinc-800 border-t-[12px] border-zinc-900 z-[5] shadow-[0_-15px_40px_rgba(0,0,0,0.95)] flex flex-col items-center">
+                    
+                    <!-- Finti cassetti -->
+                    <div class="absolute left-[5%] top-[10%] w-[25%] h-[40%] bg-zinc-700 border-4 border-zinc-900 rounded flex flex-col justify-around px-2 shadow-inner">
+                        <div class="w-full h-2 bg-black opacity-50 rounded"></div>
+                        <div class="w-full h-2 bg-black opacity-50 rounded"></div>
+                    </div>
+                    
+                    <div class="w-full h-full flex justify-center items-end pb-4 space-x-4 md:space-x-12 relative z-10">
+                        
+                        <!-- Monitor Sx -->
+                        <div class="w-[20%] h-[60%] bg-black border-[8px] border-gray-700 rounded-lg shadow-2xl relative">
+                            <div class="absolute bottom-[-16px] left-1/2 -translate-x-1/2 w-10 h-6 bg-gray-600"></div>
+                            <div class="absolute inset-0 bg-blue-900 opacity-10"></div>
+                        </div>
+                        
+                        <!-- Ventilatore -->
+                        <div class="relative w-[16%] h-[75%] flex justify-center items-end mb-4">
+                            <div class="absolute bottom-0 w-20 h-6 bg-gray-800 rounded-t-full shadow-lg"></div>
+                            <div class="absolute bottom-3 w-5 h-16 bg-gray-700"></div>
+                            <div class="absolute bottom-14 w-24 h-24 bg-gray-900 border-[6px] border-gray-800 rounded-full flex items-center justify-center animate-[spin_0.25s_linear_infinite] shadow-2xl">
+                                <div class="w-full h-1.5 bg-gray-500 absolute"></div>
+                                <div class="h-full w-1.5 bg-gray-500 absolute"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Monitor Dx -->
+                        <div class="w-[20%] h-[60%] bg-black border-[8px] border-gray-700 rounded-lg shadow-2xl relative">
+                            <div class="absolute bottom-[-16px] left-1/2 -translate-x-1/2 w-10 h-6 bg-gray-600"></div>
+                            <div class="absolute inset-0 bg-blue-900 opacity-10"></div>
+                        </div>
+
                     </div>
                 </div>
-            </div>
 
-            <!-- Porta Sinistra (Bonnie & Foxy) -->
-            <div class="door-container left-[10%]">
-                <div id="left-door" class="door"></div>
-                <div id="left-light-overlay" class="hallway-light"></div>
-                <!-- Immagine di Aisa alla porta -->
-                <img id="aisa-left" src="https://lh3.googleusercontent.com/a-/ALV-UjX5WaAKPyFOdPE72EV2dbV2IvSo1Xbdv12mYFqvBUM9gWaaMoRU=s75-c" class="absolute top-1/4 left-0 w-full object-cover hidden drop-shadow-[0_0_15px_blue]" alt="Aisa-Bonnie">
-            </div>
-            <div class="control-panel left-[5%]">
-                <div id="btn-door-left" class="btn-door" onclick="toggleDoor('left')"></div>
-                <div id="btn-light-left" class="btn-light" onclick="toggleLight('left')"></div>
-            </div>
+                <!-- Poster e Decorazioni sul muro (z-1) -->
+                <div class="absolute left-[35%] top-[15%] w-[12%] h-[25%] bg-gray-800 border-2 border-black z-[1] shadow-lg opacity-80 flex flex-wrap gap-1 p-2 transform rotate-2">
+                    <div class="w-full h-[40%] bg-white opacity-80 mb-1"></div>
+                    <div class="w-[45%] h-[30%] bg-yellow-200 opacity-80"></div>
+                    <div class="w-[45%] h-[30%] bg-white opacity-80"></div>
+                </div>
+                
+                <div class="absolute right-[35%] top-[20%] w-[10%] h-[20%] bg-blue-900 border-4 border-black z-[1] shadow-lg opacity-70 text-center font-bold text-white text-[0.6rem] md:text-sm pt-2 transform -rotate-3">
+                    CELEBRATE
+                </div>
 
-            <!-- Porta Destra (Chica & Freddy) -->
-            <div class="door-container right-[10%]">
-                <div id="right-door" class="door"></div>
-                <div id="right-light-overlay" class="hallway-light"></div>
-                <!-- Immagine di Aisa alla porta -->
-                <img id="aisa-right" src="https://lh3.googleusercontent.com/a-/ALV-UjX5WaAKPyFOdPE72EV2dbV2IvSo1Xbdv12mYFqvBUM9gWaaMoRU=s75-c" class="absolute top-1/4 left-0 w-full object-cover hidden drop-shadow-[0_0_15px_yellow]" alt="Aisa-Chica">
-            </div>
-            <div class="control-panel right-[5%]">
-                <div id="btn-door-right" class="btn-door" onclick="toggleDoor('right')"></div>
-                <div id="btn-light-right" class="btn-light" onclick="toggleLight('right')"></div>
+                <!-- Ombra sul soffitto e sfumature ai bordi per profondità -->
+                <div class="absolute top-0 left-0 w-full h-[25%] bg-gradient-to-b from-black to-transparent z-[6] pointer-events-none"></div>
+                <div class="absolute top-0 left-0 w-[10%] h-full bg-gradient-to-r from-black to-transparent z-[6] pointer-events-none opacity-80"></div>
+                <div class="absolute top-0 right-0 w-[10%] h-full bg-gradient-to-l from-black to-transparent z-[6] pointer-events-none opacity-80"></div>
+
             </div>
         </div>
 
@@ -371,21 +408,20 @@
                 CAM 1 - Palco Principale
             </div>
 
-            <!-- Feed Video: supporta sfondi personalizzati per telecamere -->
+            <!-- Feed Video -->
             <div class="w-full h-full flex items-center justify-center bg-gray-900 relative overflow-hidden bg-cover bg-center" id="cam-feed-bg" style="background-image: url('cam1_bg.png');">
                 
                 <!-- Animators standard -->
-                <img id="aisa-freddy" src="https://lh3.googleusercontent.com/a-/ALV-UjX5WaAKPyFOdPE72EV2dbV2IvSo1Xbdv12mYFqvBUM9gWaaMoRU=s75-c" class="cam-aisa hidden drop-shadow-[0_0_20px_#8b4513]" alt="Aisa-Freddy">
-                <img id="aisa-bonnie" src="https://lh3.googleusercontent.com/a-/ALV-UjX5WaAKPyFOdPE72EV2dbV2IvSo1Xbdv12mYFqvBUM9gWaaMoRU=s75-c" class="cam-aisa hidden drop-shadow-[0_0_20px_blue]" alt="Aisa-Bonnie">
-                <img id="aisa-chica" src="https://lh3.googleusercontent.com/a-/ALV-UjX5WaAKPyFOdPE72EV2dbV2IvSo1Xbdv12mYFqvBUM9gWaaMoRU=s75-c" class="cam-aisa hidden drop-shadow-[0_0_20px_yellow]" alt="Aisa-Chica">
+                <img id="aisa-freddy" src="Aisa.png" class="cam-aisa hidden drop-shadow-[0_0_20px_#8b4513]" alt="Aisa-Freddy">
+                <img id="aisa-bonnie" src="Aisa.png" class="cam-aisa hidden drop-shadow-[0_0_20px_blue]" alt="Aisa-Bonnie">
+                <img id="aisa-chica" src="Aisa.png" class="cam-aisa hidden drop-shadow-[0_0_20px_yellow]" alt="Aisa-Chica">
                 
                 <!-- Foxy quando corre (CAM 6) -->
-                <img id="aisa-foxy-run" src="https://lh3.googleusercontent.com/a-/ALV-UjX5WaAKPyFOdPE72EV2dbV2IvSo1Xbdv12mYFqvBUM9gWaaMoRU=s75-c" class="cam-aisa hidden drop-shadow-[0_0_20px_red] -skew-x-12 scale-125" alt="Aisa-Foxy-Run">
+                <img id="aisa-foxy-run" src="Aisa.png" class="cam-aisa hidden drop-shadow-[0_0_20px_red] -skew-x-12 scale-125" alt="Aisa-Foxy-Run">
 
                 <!-- COVO DEI PIRATI (CAM 3 Speciale) -->
-                <!-- Aggiunto sfocatura o oscurità per far risaltare le tende rispetto allo sfondo -->
                 <div id="cove-container" class="hidden absolute inset-0 w-full h-full flex items-center justify-center bg-black bg-opacity-60">
-                    <img id="cove-aisa" src="https://lh3.googleusercontent.com/a-/ALV-UjX5WaAKPyFOdPE72EV2dbV2IvSo1Xbdv12mYFqvBUM9gWaaMoRU=s75-c" class="w-64 h-64 object-cover filter grayscale drop-shadow-[0_0_20px_red] z-10 hidden" alt="Aisa-Foxy">
+                    <img id="cove-aisa" src="Aisa.png" class="w-64 h-64 object-cover filter grayscale drop-shadow-[0_0_20px_red] z-10 hidden" alt="Aisa-Foxy">
                     
                     <div id="curtain-left" class="absolute left-0 top-0 h-full w-1/2 bg-purple-900 border-r-8 border-yellow-600 transition-transform duration-[2000ms] ease-in-out z-20"></div>
                     <div id="curtain-right" class="absolute right-0 top-0 h-full w-1/2 bg-purple-900 border-l-8 border-yellow-600 transition-transform duration-[2000ms] ease-in-out z-20"></div>
@@ -418,7 +454,7 @@
 
     <!-- Schermata Jumpscare -->
     <div id="jumpscare-screen" class="hidden absolute inset-0 z-50 bg-black flex items-center justify-center overflow-hidden">
-        <img src="https://lh3.googleusercontent.com/a-/ALV-UjX5WaAKPyFOdPE72EV2dbV2IvSo1Xbdv12mYFqvBUM9gWaaMoRU=s75-c" class="w-full h-full object-cover jumpscare-anim scale-150" alt="Aisa Jumpscare">
+        <img src="Aisa.png" class="w-full h-full object-cover jumpscare-anim scale-150" alt="Aisa Jumpscare">
         <div class="static-noise opacity-50"></div>
     </div>
 
@@ -503,7 +539,8 @@
         let power = 100.0;
         let timeHour = 0; 
         let timeTicks = 0;
-        const ticksPerHour = 45; 
+        let ticksPerHour = 45; // Verrà calcolato dinamicamente
+        let currentNight = 1;
         
         let state = {
             leftDoor: false,
@@ -514,13 +551,12 @@
             currentCam: 1
         };
 
-        // I 4 Animatronics
+        // Aggiunti i timer individuali per gestire la logica della finestra (10-20 sec) e penalità porta aperta (5 sec)
         let animatronics = {
-            freddy: { location: 1, name: "Aisa-Freddy" },
-            bonnie: { location: 1, name: "Aisa-Bonnie" },
-            chica:  { location: 1, name: "Aisa-Chica" },
+            freddy: { location: 1, name: "Aisa-Freddy", timer: 0, angryTimer: 0, windowMax: 15 },
+            bonnie: { location: 1, name: "Aisa-Bonnie", timer: 0, angryTimer: 0, windowMax: 15 },
+            chica:  { location: 1, name: "Aisa-Chica", timer: 0, angryTimer: 0, windowMax: 15 },
             foxy:   { location: 3, state: 0, name: "Aisa-Foxy" } 
-            // Foxy states: 0(chiusa), 1(sbircia), 2(aperta), 3(partita)
         };
 
         let isGameOver = false;
@@ -537,15 +573,78 @@
             9: "CAM 9 - Angolo Est"
         };
 
+        // --- Sistema Panning Ufficio ---
+        let panX = 0;
+        let targetPanX = 0;
+
+        function initPan() {
+            panX = window.innerWidth * 0.2; 
+            targetPanX = panX;
+            requestAnimationFrame(updatePanLoop);
+        }
+
+        document.addEventListener('mousemove', (e) => {
+            if(!state.cameraOpen && !isGameOver) {
+                let hiddenWidth = window.innerWidth * 0.4; 
+                let ratio = e.clientX / window.innerWidth;
+                targetPanX = ratio * hiddenWidth;
+            }
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if(!state.cameraOpen && !isGameOver) {
+                let hiddenWidth = window.innerWidth * 0.4;
+                let ratio = e.touches[0].clientX / window.innerWidth;
+                targetPanX = ratio * hiddenWidth;
+            }
+        });
+
+        function updatePanLoop() {
+            if (!state.cameraOpen && !isGameOver) {
+                panX += (targetPanX - panX) * 0.08; 
+                document.getElementById('office-panner').style.transform = `translateX(-${panX}px)`;
+            }
+            requestAnimationFrame(updatePanLoop);
+        }
+
+        // --- Gestione Menu e Salvataggio ---
+        function initMenu() {
+            currentNight = parseInt(localStorage.getItem('aisa_night')) || 1;
+            const btnContinue = document.getElementById('btn-continue');
+            const textContinue = document.getElementById('text-continue');
+
+            if (currentNight > 1) {
+                btnContinue.classList.remove('cursor-not-allowed', 'opacity-50');
+                btnContinue.classList.add('cursor-pointer');
+                btnContinue.onclick = () => startGame(false);
+                textContinue.innerText = `Continue (Notte ${currentNight})`;
+                textContinue.classList.add('group-hover:text-gray-300', 'transition-colors');
+            }
+        }
+        
+        // Eseguiamo l'inizializzazione del menu all'avvio
+        window.onload = initMenu;
+
         // --- Funzioni Principali ---
 
-        function startGame() {
+        function startGame(isNew = false) {
+            if (isNew) {
+                currentNight = 1;
+                localStorage.setItem('aisa_night', 1);
+            }
+
+            // La notte 1 è più veloce (25s per ora di gioco). Aumenta di 5s ogni notte.
+            ticksPerHour = Math.min(25 + (currentNight - 1) * 5, 50);
+            
+            document.getElementById('night-display').innerText = `Notte ${currentNight}`;
+
             initAudio();
             document.getElementById('main-menu').classList.add('hidden');
             document.getElementById('game-container').classList.remove('hidden');
             
-            gameLoop = setInterval(updateGame, 1000);
-            aiLoop = setInterval(updateAI, 3000); // IA valuta di muoversi ogni 3 sec
+            initPan(); 
+            gameLoop = setInterval(updateGame, 1000); // 1 tick al secondo per l'energia e i timer della finestra
+            aiLoop = setInterval(updateAI, 3000);     // 1 tick ogni 3 secondi per i movimenti casuali tra le stanze
             
             updateOfficeView();
         }
@@ -553,6 +652,7 @@
         function updateGame() {
             if (isGameOver) return;
 
+            // Timer generali (Ore del gioco)
             timeTicks++;
             if (timeTicks >= ticksPerHour) {
                 timeTicks = 0;
@@ -564,6 +664,10 @@
                 }
             }
 
+            // Aggiorna logicamente i timer delle finestre ogni secondo
+            handleAnimatronicTimers();
+
+            // Calcolo energia
             let usage = 1;
             if (state.leftDoor) usage++;
             if (state.rightDoor) usage++;
@@ -587,19 +691,66 @@
             document.getElementById('power-display').innerText = Math.floor(power);
         }
 
+        // Gestisce il passaggio Porta -> Finestra e il limite di 5 secondi se la porta viene aperta
+        function handleAnimatronicTimers() {
+            ['bonnie', 'chica', 'freddy'].forEach(key => {
+                let anim = animatronics[key];
+                let isLeft = (key === 'bonnie');
+                let doorLoc = isLeft ? 10 : 11;
+                let windowLoc = isLeft ? 12 : 13;
+                let isDoorClosed = isLeft ? state.leftDoor : state.rightDoor;
+
+                if (anim.location === doorLoc) {
+                    // Sono alla porta. Se è chiusa, dopo 3 secondi si spostano alla finestra
+                    if (isDoorClosed) {
+                        anim.timer++;
+                        if (anim.timer >= 3) {
+                            anim.location = windowLoc;
+                            anim.timer = 0;
+                            anim.windowMax = 10 + Math.floor(Math.random() * 11); // Da 10 a 20 secondi
+                            anim.angryTimer = 0;
+                            updateOfficeView();
+                        }
+                    } else {
+                        anim.timer = 0; // Se la porta è aperta, il timer di "attesa" si azzera
+                    }
+                } else if (anim.location === windowLoc) {
+                    // Sono alla finestra, scorre il tempo di permanenza generale (10-20 sec)
+                    anim.timer++;
+
+                    if (!isDoorClosed) {
+                        // Allarme: la porta è stata aperta mentre sono alla finestra!
+                        anim.angryTimer++;
+                        if (anim.angryTimer >= 5) {
+                            triggerJumpscare(anim.name);
+                        }
+                    } else {
+                        // Porta richiusa, si calmano (timer reset)
+                        anim.angryTimer = 0;
+                    }
+
+                    // Se è passato il tempo massimo alla finestra, se ne vanno
+                    if (anim.timer >= anim.windowMax) {
+                        anim.location = 2; // Tornano in Sala Mensa
+                        anim.timer = 0;
+                        anim.angryTimer = 0;
+                        updateOfficeView();
+                        updateCameraFeed();
+                    }
+                }
+            });
+        }
+
         // --- Intelligenza Artificiale ---
         function updateAI() {
             if (isGameOver) return;
 
-            let aiLevel = 3 + timeHour; 
+            // L'intelligenza scala in base alla Notte (Notte 1: calma, Notti successive: aggressiva)
+            let aiLevel = (currentNight * 2) - 1 + timeHour; 
             
-            // Bonnie (molto attivo)
             if (Math.random() * 20 < aiLevel + 2) moveAnimatronic('bonnie');
-            // Chica (media)
             if (Math.random() * 20 < aiLevel) moveAnimatronic('chica');
-            // Freddy (attivo tardi e se telecamere chiuse)
             if (timeHour >= 2 && Math.random() * 20 < aiLevel - 1) moveAnimatronic('freddy');
-            // Foxy (gestione tende)
             if (Math.random() * 20 < aiLevel + 1) updateFoxy();
         }
 
@@ -608,15 +759,18 @@
             let loc = anim.location;
             let moved = false;
             
+            // Se sono fermi alla finestra (12, 13) non devono muoversi casualmente, ci pensa handleAnimatronicTimers()
+            if (loc === 12 || loc === 13) return;
+
             if (name === 'bonnie') {
                 if(loc===1) anim.location=2;
                 else if(loc===2) anim.location=5; 
                 else if(loc===5) anim.location=6; 
                 else if(loc===6) anim.location=7; 
-                else if(loc===7) anim.location=10; // Porta Sx
+                else if(loc===7) anim.location=10;
                 else if(loc===10) {
+                    // Se la porta è aperta ti salta addosso (jumpscare diretto), se è chiusa non facciamo niente (ci pensa il timer a spostarlo alla finestra)
                     if(!state.leftDoor && Math.random()<0.4) triggerJumpscare(anim.name);
-                    else if(state.leftDoor) anim.location=2; // Torna indietro
                 }
                 if(loc !== anim.location) moved = true;
             }
@@ -625,30 +779,29 @@
                 else if(loc===2) anim.location=4; 
                 else if(loc===4) anim.location=8; 
                 else if(loc===8) anim.location=9; 
-                else if(loc===9) anim.location=11; // Porta Dx
+                else if(loc===9) anim.location=11;
                 else if(loc===11) {
                     if(!state.rightDoor && Math.random()<0.4) triggerJumpscare(anim.name);
-                    else if(state.rightDoor) anim.location=2;
                 }
                 if(loc !== anim.location) moved = true;
             }
             else if (name === 'freddy') {
-                if (state.cameraOpen) return; // Freddy non si muove se guardi le cam
+                if (state.cameraOpen) return;
                 if(loc===1) anim.location=2;
                 else if(loc===2) anim.location=8; 
                 else if(loc===8) anim.location=9; 
                 else if(loc===9) anim.location=11;
                 else if(loc===11) {
                     if(!state.rightDoor && Math.random()<0.6) triggerJumpscare(anim.name);
-                    else if(state.rightDoor) anim.location=1;
                 }
                 if(loc !== anim.location) moved = true;
             }
 
             if (moved) {
+                anim.timer = 0; // Azzera il timer ogni volta che cambiano stanza
+                anim.angryTimer = 0;
                 updateCameraFeed();
                 updateOfficeView();
-                // Effetto statica telecamera se aperta
                 if (state.cameraOpen) triggerCamStatic();
             }
         }
@@ -657,36 +810,31 @@
             let foxy = animatronics.foxy;
             
             if (foxy.location === 3) {
-                // Se stai guardando attivamente la CAM 3, Foxy non avanza
                 if (state.cameraOpen && state.currentCam === 3) return;
                 
                 foxy.state++;
                 if (foxy.state >= 3) {
-                    foxy.location = 6; // Parte e va in Corridoio Ovest
+                    foxy.location = 6;
                 }
                 updateCameraFeed();
                 if(state.cameraOpen) triggerCamStatic();
             } 
             else if (foxy.location === 6) {
-                // Dal corridoio corre verso la porta
                 foxy.location = 10;
                 updateCameraFeed();
                 if(state.cameraOpen) triggerCamStatic();
             } 
             else if (foxy.location === 10) {
-                // Foxy è alla porta
                 if (!state.leftDoor) {
-                    // Morte istantanea
                     triggerJumpscare(foxy.name);
                 } else {
-                    // Batte alla porta, toglie energia e si resetta
                     playBeep(100, 'sawtooth', 0.2, 0.5); 
                     setTimeout(() => playBeep(100, 'sawtooth', 0.2, 0.5), 300);
                     setTimeout(() => playBeep(100, 'sawtooth', 0.2, 0.5), 600);
                     
-                    power = Math.max(0, power - 8); // Drena energia per la botta
+                    power = Math.max(0, power - 8); 
                     foxy.location = 3;
-                    foxy.state = 0; // Torna alla tenda chiusa
+                    foxy.state = 0; 
                     updateCameraFeed();
                 }
             }
@@ -715,6 +863,7 @@
                 document.getElementById('btn-door-right').className = state.rightDoor ? 'btn-door active' : 'btn-door';
             }
             updateGame(); 
+            updateOfficeView(); 
         }
 
         function toggleLight(side) {
@@ -734,28 +883,54 @@
         }
 
         function updateOfficeView() {
-            document.getElementById('left-light-overlay').className = `hallway-light ${state.leftLight ? 'on' : ''}`;
+            document.getElementById('left-light-overlay').style.opacity = state.leftLight ? '0.7' : '0';
+            document.getElementById('left-window-overlay').style.opacity = state.leftLight ? '0.7' : '0';
             document.getElementById('btn-light-left').className = `btn-light ${state.leftLight ? 'active' : ''}`;
             
-            document.getElementById('right-light-overlay').className = `hallway-light ${state.rightLight ? 'on' : ''}`;
+            document.getElementById('right-light-overlay').style.opacity = state.rightLight ? '0.7' : '0';
+            document.getElementById('right-window-overlay').style.opacity = state.rightLight ? '0.7' : '0';
             document.getElementById('btn-light-right').className = `btn-light ${state.rightLight ? 'active' : ''}`;
 
-            // Aisa-Bonnie alla porta sinistra
-            if (animatronics.bonnie.location === 10 && state.leftLight && !state.leftDoor) {
+            // LATO SINISTRO (Bonnie)
+            let bonnieLoc = animatronics.bonnie.location;
+            if (bonnieLoc === 10 && state.leftLight && !state.leftDoor) {
+                // E' alla porta, e la porta è aperta
                 document.getElementById('aisa-left').classList.remove('hidden');
-            } else {
+                document.getElementById('aisa-window-left').classList.add('hidden');
+            } else if (bonnieLoc === 12 && state.leftLight) {
+                // Si è spostato alla finestra
                 document.getElementById('aisa-left').classList.add('hidden');
+                document.getElementById('aisa-window-left').classList.remove('hidden');
+            } else {
+                // Non visibile
+                document.getElementById('aisa-left').classList.add('hidden');
+                document.getElementById('aisa-window-left').classList.add('hidden');
             }
 
-            // Aisa-Chica o Freddy alla porta destra
-            if ((animatronics.chica.location === 11 || animatronics.freddy.location === 11) && state.rightLight && !state.rightDoor) {
-                let img = document.getElementById('aisa-right');
-                img.classList.remove('hidden');
-                // Cambia il colore dell'ombra in base a chi è
-                if(animatronics.chica.location === 11) img.className = "absolute top-1/4 left-0 w-full object-cover drop-shadow-[0_0_15px_yellow]";
-                else img.className = "absolute top-1/4 left-0 w-full object-cover drop-shadow-[0_0_15px_#8b4513]";
+            // LATO DESTRO (Chica / Freddy)
+            let rightAnim = (animatronics.chica.location === 11 || animatronics.chica.location === 13) ? animatronics.chica :
+                            ((animatronics.freddy.location === 11 || animatronics.freddy.location === 13) ? animatronics.freddy : null);
+
+            if (rightAnim) {
+                let shadowColor = rightAnim.name === "Aisa-Chica" ? 'drop-shadow-[0_0_15px_yellow]' : 'drop-shadow-[0_0_15px_#8b4513]';
+                let imgPorta = document.getElementById('aisa-right');
+                let imgFinestra = document.getElementById('aisa-window-right');
+
+                if (rightAnim.location === 11 && state.rightLight && !state.rightDoor) {
+                    imgPorta.classList.remove('hidden');
+                    imgFinestra.classList.add('hidden');
+                    imgPorta.className = `absolute bottom-0 left-[0%] w-[120%] h-[90%] object-contain z-0 ${shadowColor}`;
+                } else if (rightAnim.location === 13 && state.rightLight) {
+                    imgPorta.classList.add('hidden');
+                    imgFinestra.classList.remove('hidden');
+                    imgFinestra.className = `absolute bottom-[0%] left-[-80%] w-[250%] h-[120%] object-contain z-0 ${shadowColor}`;
+                } else {
+                    imgPorta.classList.add('hidden');
+                    imgFinestra.classList.add('hidden');
+                }
             } else {
                 document.getElementById('aisa-right').classList.add('hidden');
+                document.getElementById('aisa-window-right').classList.add('hidden');
             }
         }
 
@@ -804,17 +979,14 @@
         function updateCameraFeed() {
             document.getElementById('cam-name').innerText = camNames[state.currentCam];
             
-            // Imposta dinamicamente lo sfondo in base al numero della telecamera!
             const feed = document.getElementById('cam-feed-bg');
             feed.style.backgroundImage = `url('cam${state.currentCam}_bg.png')`;
             
-            // Nascondi tutti prima di aggiornare
             ['freddy', 'bonnie', 'chica', 'foxy-run'].forEach(id => {
                 document.getElementById('aisa-'+id).classList.add('hidden');
             });
             document.getElementById('cove-container').classList.add('hidden');
 
-            // Logica Speciale Foxy CAM 3
             if (state.currentCam === 3) {
                 document.getElementById('cove-container').classList.remove('hidden');
                 let cl = document.getElementById('curtain-left');
@@ -842,8 +1014,6 @@
                     coveSign.classList.remove('hidden');
                 }
             } else {
-                // Logica telecamere normali
-                // Filtriamo quali animatronics sono presenti in questa CAM (escluso foxy che ha logiche a parte)
                 let presenti = ['freddy', 'bonnie', 'chica'].filter(animKey => animatronics[animKey].location === state.currentCam);
                 let numeroPresenti = presenti.length;
                 
@@ -851,17 +1021,28 @@
                     let el = document.getElementById('aisa-'+animKey);
                     el.classList.remove('hidden');
                     
-                    // Calcolo per distribuirli uniformemente sullo schermo in orizzontale
-                    // Moltiplichiamo per 160px di distanza in modo che non si coprano
-                    let offsetX = (i - (numeroPresenti - 1) / 2) * 160; 
+                    let offsetX = 0;
+                    let offsetY = 0;
+
+                    if (state.currentCam === 1) {
+                        if (animKey === 'bonnie') {
+                            offsetX = -240; 
+                            offsetY = 40;   
+                        } else if (animKey === 'freddy') {
+                            offsetX = 0;    
+                            offsetY = -10;  
+                        } else if (animKey === 'chica') {
+                            offsetX = 240;  
+                            offsetY = -50;  
+                        }
+                    } else {
+                        offsetX = (i - (numeroPresenti - 1) / 2) * 200; 
+                        offsetY = (i % 2 === 0 ? 20 : -20);
+                    }
                     
-                    // Li sfalsiamo leggermente in altezza (su e giù) per dare profondità alla scena
-                    let offsetY = (i % 2 === 0 ? 15 : -15);
-                    
-                    el.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${1 + Math.random()*0.1})`;
+                    el.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${1 + Math.random()*0.05})`;
                 });
 
-                // Se Foxy sta correndo nella CAM 6
                 if (animatronics.foxy.location === state.currentCam && state.currentCam === 6) {
                     document.getElementById('aisa-foxy-run').classList.remove('hidden');
                 }
@@ -881,13 +1062,13 @@
             document.getElementById('right-door').classList.remove('closed');
             document.getElementById('camera-view').classList.add('hidden');
             document.getElementById('cam-toggle-btn').classList.add('hidden');
-            document.getElementById('office-view').style.background = 'black';
+            document.getElementById('office-panner').style.filter = 'brightness(0.1)';
             updateOfficeView();
 
             playPowerOutSound();
 
             setTimeout(() => {
-                if (!isGameOver) triggerJumpscare("Aisa-Freddy"); // Freddy ti prende al buio
+                if (!isGameOver) triggerJumpscare("Aisa-Freddy"); 
             }, Math.random() * 5000 + 4000); 
         }
 
@@ -916,6 +1097,10 @@
             isGameOver = true;
             clearInterval(gameLoop);
             clearInterval(aiLoop);
+
+            // Salva il progresso per la notte successiva
+            currentNight++;
+            localStorage.setItem('aisa_night', currentNight);
 
             playWinChime();
             document.getElementById('game-container').classList.add('hidden');
